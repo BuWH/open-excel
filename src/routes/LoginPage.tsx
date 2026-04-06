@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { listLiteLlmModels } from "../lib/litellm/client";
+import { listLiteLlmModels } from "../lib/litellm/models";
 import { getBaseUrlValidationError, normaliseProvider } from "../lib/litellm/provider";
 import { defaultProvider, useSessionStore } from "../state/sessionStore";
 

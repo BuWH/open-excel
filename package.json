@@ -15,9 +15,14 @@
     "office:web:start": "office-addin-debugging start manifest.xml web --app excel --no-live-reload --dev-server \"bun run office:serve\"",
     "office:web:stop": "office-addin-debugging stop manifest.xml",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit -p tsconfig.app.json"
+    "typecheck": "tsc --noEmit -p tsconfig.app.json",
+    "e2e": "playwright test",
+    "e2e:headed": "playwright test --headed",
+    "e2e:step": "node e2e/step.cjs"
   },
   "dependencies": {
+    "@mariozechner/pi-agent-core": "^0.65.2",
+    "@mariozechner/pi-ai": "^0.65.2",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-router-dom": "^7.9.6",
@@ -26,6 +31,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.2.6",
+    "@playwright/test": "^1.59.1",
     "@types/node": "^24.12.0",
     "@types/office-js": "^1.0.420",
     "@types/react": "^19.2.14",
