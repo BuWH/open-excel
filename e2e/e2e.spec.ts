@@ -340,12 +340,24 @@ test.describe("Open Excel E2E", () => {
     // Clear previous console logs
     consoleLogs.length = 0;
 
-    // Type a simple query
-    await setReactTextareaValue(taskpane!, '[data-testid="prompt-input"]', "Write hello world in cell A1");
+    // Use a unique value with timestamp so we can verify THIS run wrote it
+    const uniqueValue = `e2e-${Date.now()}`;
+    const prompt = `Write the exact text "${uniqueValue}" into cell B1 on Sheet1. Do not add anything else.`;
 
-    // Verify input was set
-    const value = await taskpane!.locator('[data-testid="prompt-input"]').inputValue();
-    expect(value).toBe("Write hello world in cell A1");
+    // Read current B1 value from the workbook preview to confirm it's different
+    // Navigate to B1 via the Name Box in Excel
+    const nameBox = excelFrame.locator('input[aria-label*="名称框"], input[aria-label*="Name Box"]').first();
+    await nameBox.click();
+    await nameBox.fill("B1");
+    await nameBox.press("Enter");
+    await page.waitForTimeout(1_000);
+    const formulaBar = excelFrame.locator('[aria-label="formula bar"]');
+    const valueBefore = await formulaBar.innerText().catch(() => "");
+    // The unique value should NOT already be in B1
+    expect(valueBefore.trim()).not.toBe(uniqueValue);
+
+    // Type the prompt
+    await setReactTextareaValue(taskpane!, '[data-testid="prompt-input"]', prompt);
 
     // Click run
     const runBtn = taskpane!.locator('[data-testid="run-agent"]');
@@ -358,13 +370,17 @@ test.describe("Open Excel E2E", () => {
     // Wait for agent to finish (busy state clears)
     await expect(runBtn).toHaveText("Run agent", { timeout: 60_000 });
 
-    // Verify messages: user prompt must appear in message list
-    const messageList = taskpane!.locator('[data-testid="message-list"]');
-    await expect(messageList).toContainText("Write hello world in cell A1");
-
-    // Verify that the agent produced an assistant response (not just user + runtime)
+    // Verify that the agent produced an assistant response
     const assistantMessages = taskpane!.locator('[data-testid="message-list"] .role-assistant');
     const assistantCount = await assistantMessages.count();
     expect(assistantCount).toBeGreaterThan(0);
+
+    // Navigate to B1 again and verify the cell now contains our unique value
+    await nameBox.click();
+    await nameBox.fill("B1");
+    await nameBox.press("Enter");
+    await page.waitForTimeout(1_000);
+    const valueAfter = await formulaBar.innerText();
+    expect(valueAfter.trim()).toBe(uniqueValue);
   });
 });
