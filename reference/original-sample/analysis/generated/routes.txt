@@ -1,0 +1,9 @@
+/
+/auth/3p
+/auth/3p/bedrock
+/auth/3p/gateway
+/auth/3p/vertex
+/auth/callback
+/auth/login
+/onboarding
+/terms
