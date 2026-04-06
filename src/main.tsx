@@ -43,7 +43,7 @@ async function ensureOfficeRuntime() {
   if (typeof Office !== "undefined" && typeof Office.onReady === "function") {
     const info = await Office.onReady();
     if (info?.host !== Office.HostType.Excel || typeof Excel === "undefined") {
-      throw new Error("Claude in Excel Rebuild only runs inside the Excel Office.js host.");
+      throw new Error("OpenExcel only runs inside the Excel Office.js host.");
     }
     return;
   }
@@ -61,7 +61,7 @@ async function ensureOfficeRuntime() {
   if (typeof Office !== "undefined" && typeof Office.onReady === "function") {
     const info = await Office.onReady();
     if (info?.host !== Office.HostType.Excel || typeof Excel === "undefined") {
-      throw new Error("Claude in Excel Rebuild only runs inside the Excel Office.js host.");
+      throw new Error("OpenExcel only runs inside the Excel Office.js host.");
     }
     return;
   }

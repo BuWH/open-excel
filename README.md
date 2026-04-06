@@ -35,7 +35,6 @@ The LLM backend uses any OpenAI-compatible endpoint via LiteLLM.
 
 ## Not implemented yet
 
-- Anthropic OAuth
 - bootstrap / claims merge
 - MCP
 - conductor
@@ -103,7 +102,3 @@ Notes:
 - Run `bun run manifest:validate` before sideloading.
 - Use `bun run office:web:start` to start the dev server and launch Excel on the web sideload flow with the official debugging toolchain.
 - In Excel Online, reopen the taskpane from `More options -> Open Excel` when multiple add-ins are present.
-
-## Reference materials
-
-Reverse-engineering documentation and original sample extracts are preserved in `reference/`.

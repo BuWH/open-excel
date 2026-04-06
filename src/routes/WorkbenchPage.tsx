@@ -183,7 +183,7 @@ export function WorkbenchPage() {
       <main className="app-shell">
         <header className="app-header">
           <div className="app-header-left">
-            <h1 className="app-title">Claude in Excel</h1>
+            <h1 className="app-title">OpenExcel</h1>
             <span className="pill">{ENV_MODEL.id}</span>
             <span className="pill">{adapter?.kind ?? "resolving"}</span>
           </div>

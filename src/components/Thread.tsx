@@ -39,7 +39,7 @@ export function Thread() {
       <ThreadPrimitive.Viewport className="aui-thread-viewport">
         <ThreadPrimitive.Empty>
           <div className="aui-thread-empty">
-            <h2>Claude in Excel</h2>
+            <h2>OpenExcel</h2>
             <p>Send a message to start working with your Excel workbook.</p>
           </div>
         </ThreadPrimitive.Empty>

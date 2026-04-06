@@ -437,10 +437,10 @@ async function step5() {
     await page.waitForTimeout(2000);
     await snap(page, "more-options-menu");
 
-    // Click "Open Rebuild"
-    const openRebuild = excelFrame.getByRole("menuitem", { name: "Open Rebuild" });
+    // Click "Open Assistant"
+    const openRebuild = excelFrame.getByRole("menuitem", { name: "Open Assistant" });
     if ((await openRebuild.count()) > 0) {
-      console.log("Found Open Rebuild!");
+      console.log("Found Open Assistant!");
       await openRebuild.click();
       await page.waitForTimeout(5000);
       await snap(page, "addin-opened");
@@ -452,7 +452,7 @@ async function step5() {
   } else {
     console.log("More options not found. Looking for alternatives...");
     // It might already be in the ribbon as a button
-    const openRebuildBtn = excelFrame.getByRole("button", { name: "Open Rebuild" });
+    const openRebuildBtn = excelFrame.getByRole("button", { name: "Open Assistant" });
     if ((await openRebuildBtn.count()) > 0) {
       await openRebuildBtn.click();
       await page.waitForTimeout(5000);
@@ -500,7 +500,7 @@ async function step6() {
     if ((await moreOptions.count()) > 0) {
       await moreOptions.click();
       await page.waitForTimeout(1000);
-      const openRebuild = excelFrame.getByRole("menuitem", { name: "Open Rebuild" });
+      const openRebuild = excelFrame.getByRole("menuitem", { name: "Open Assistant" });
       if ((await openRebuild.count()) > 0) {
         await openRebuild.click();
         await page.waitForTimeout(5000);
@@ -590,7 +590,7 @@ async function step7() {
     if ((await moreOptions.count()) > 0) {
       await moreOptions.click();
       await page.waitForTimeout(1000);
-      const openRebuild = excelFrame.getByRole("menuitem", { name: "Open Rebuild" });
+      const openRebuild = excelFrame.getByRole("menuitem", { name: "Open Assistant" });
       if ((await openRebuild.count()) > 0) {
         await openRebuild.click();
         await page.waitForTimeout(5000);
@@ -693,7 +693,7 @@ async function step8() {
     const overflow = excelFrame.locator("#RibbonOverflowMenu-overflow");
     await overflow.click();
     await page.waitForTimeout(1000);
-    await excelFrame.getByRole("menuitem", { name: "Open Rebuild" }).click();
+    await excelFrame.getByRole("menuitem", { name: "Open Assistant" }).click();
     await page.waitForTimeout(5000);
     for (const f of page.frames()) {
       if (f.url().includes("localhost:5173")) {

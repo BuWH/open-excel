@@ -32,8 +32,8 @@ export const useSessionStore = create<SessionState>()(
         }),
     }),
     {
-      name: "claude-in-excel-rebuild",
-      version: 4,
+      name: "open-excel",
+      version: 5,
       migrate: (persistedState) => {
         const state = persistedState as Partial<SessionState> | undefined;
 

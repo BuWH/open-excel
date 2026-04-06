@@ -164,7 +164,7 @@ async function openAddin(page: Page, excelFrame: FrameLocator) {
   const overflow = excelFrame.locator("#RibbonOverflowMenu-overflow");
   await overflow.click();
   await page.waitForTimeout(1_000);
-  await excelFrame.getByRole("menuitem", { name: "Open Rebuild" }).click();
+  await excelFrame.getByRole("menuitem", { name: "Open Assistant" }).click();
   await page.waitForTimeout(5_000);
 }
 
@@ -238,14 +238,14 @@ test.describe("Open Excel E2E", () => {
   });
 
   test("sideload add-in if not already loaded", async () => {
-    // Try opening the add-in first; if "Open Rebuild" is missing, sideload
+    // Try opening the add-in first; if "Open Assistant" is missing, sideload
     const overflow = excelFrame.locator("#RibbonOverflowMenu-overflow");
     let alreadySideloaded = false;
 
     if ((await overflow.count()) > 0) {
       await overflow.click();
       await page.waitForTimeout(1_000);
-      const openRebuild = excelFrame.getByRole("menuitem", { name: "Open Rebuild" });
+      const openRebuild = excelFrame.getByRole("menuitem", { name: "Open Assistant" });
       if ((await openRebuild.count()) > 0) {
         alreadySideloaded = true;
         await page.keyboard.press("Escape");
@@ -259,10 +259,10 @@ test.describe("Open Excel E2E", () => {
     if (!alreadySideloaded) {
       await sideloadManifest(page, excelFrame);
 
-      // Verify sideload succeeded: "Open Rebuild" should now appear in overflow
+      // Verify sideload succeeded: "Open Assistant" should now appear in overflow
       await overflow.click();
       await page.waitForTimeout(1_000);
-      const openRebuild = excelFrame.getByRole("menuitem", { name: "Open Rebuild" });
+      const openRebuild = excelFrame.getByRole("menuitem", { name: "Open Assistant" });
       await expect(openRebuild).toBeVisible({ timeout: 5_000 });
       await page.keyboard.press("Escape");
       await page.waitForTimeout(500);

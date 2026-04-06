@@ -47,7 +47,6 @@ src/
   state/            Zustand stores (sessionStore)
   styles/           CSS
 docs/               Documentation (e2e-workflow.md)
-reference/          Reverse-engineering reference materials
 ```
 
 ## Development Commands
@@ -101,7 +100,7 @@ Every feature must be E2E tested in Excel Online before committing. The real Exc
    bun run dev
    ```
 2. Open Excel Online and sideload the add-in (or use CDM to navigate).
-3. In Excel Online, open the add-in from `More options` -> `Claude Rebuild`.
+3. In Excel Online, open the add-in from `More options` -> `OpenExcel`.
 4. If the taskpane is not at the workbench, complete the route flow: login -> terms -> onboarding -> workbench.
 5. Confirm the model pill shows `claude-opus-4.6`.
 6. Run a test query against the live workbook. Verify the add-in reads and writes correctly.
@@ -156,15 +155,13 @@ All tool inputs are validated with Zod schemas before execution. The agent syste
 - **HTTPS taskpane cannot call HTTP LiteLLM directly**: Use `/api/litellm/v1` in the client and set `LITELLM_UPSTREAM_URL` for the Vite proxy.
 - **Tool loop stalls**: Open the debug timeline. If only `llm-request` events appear with no tool results, check LiteLLM logs.
 - **Assistant plans but never calls tools**: Inspect LiteLLM response parsing. Some providers split content and tool calls across multiple choices.
-- **Wrong add-in opens**: Reopen from `More options` and explicitly choose `Claude Rebuild`, not `Claude`.
+- **Wrong add-in opens**: Reopen from `More options` and explicitly choose `OpenExcel`.
 
 ## Future Plans
 
-- Refactor to use pi-mono's `@mariozechner/pi-ai` and `@mariozechner/pi-agent-core`
 - Add streaming responses
 - Add pi-web-ui integration
 - Add more workbook tools
 - Support Word and PowerPoint surfaces
-- Anthropic OAuth and bootstrap/claims merge
 - MCP integration
 - Telemetry and analytics

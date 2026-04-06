@@ -59,7 +59,7 @@ export function LoginPage() {
     <main className="route-shell">
       <section className="hero-card">
         <p className="eyebrow">Provider Configuration</p>
-        <h1>Claude in Excel</h1>
+        <h1>OpenExcel</h1>
         <p className="lead">
           Configure your LLM provider endpoint and model to use with the Excel assistant.
         </p>
