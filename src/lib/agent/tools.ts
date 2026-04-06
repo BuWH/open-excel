@@ -2,6 +2,7 @@ import type { AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
 import type { Static, TSchema } from "@mariozechner/pi-ai";
 import { Type } from "@mariozechner/pi-ai";
 import type { WorkbookAdapter } from "../adapters/types";
+import { logToolError } from "../debug/errorLog";
 
 function textResult<T>(data: T): AgentToolResult<T> {
   return {
@@ -56,8 +57,21 @@ function createTool<TParams extends TSchema>(config: {
     label: config.label,
     description: config.description,
     parameters: config.parameters,
-    execute: async (_toolCallId, params) =>
-      textResult(await config.execute(params as Static<TParams>)),
+    execute: async (_toolCallId, params) => {
+      try {
+        return textResult(await config.execute(params as Static<TParams>));
+      } catch (error) {
+        logToolError(config.name, params as Record<string, unknown>, error);
+        const message = error instanceof Error ? error.message : String(error);
+        const stack = error instanceof Error ? error.stack : undefined;
+        const errorDetail = stack ? `${message}\n\nStack:\n${stack}` : message;
+        return {
+          content: [{ type: "text", text: `Error: ${errorDetail}` }],
+          details: null,
+          isError: true,
+        };
+      }
+    },
   };
 }
 
@@ -94,14 +108,33 @@ export function createWorkbookTools(adapter: WorkbookAdapter): AgentTool[] {
       parameters: ClearCellRangeParams,
       execute: (params) => adapter.clearCellRange(params),
     }),
-    createTool({
+    {
       name: "get_range_image",
       label: "Get range image",
       description:
-        "Render a worksheet range as a Base64 PNG image. Use this for visual debugging or style comparison after writing a report.",
+        "Render a worksheet range as a Base64 PNG image, including any charts or shapes that overlap the range. Use this for visual debugging or style comparison after writing a report.",
       parameters: GetRangeImageParams,
-      execute: (params) => adapter.getRangeImage(params),
-    }),
+      execute: async (_toolCallId, params) => {
+        try {
+          const result = await adapter.getRangeImage(params as { sheetName: string; range: string });
+          return {
+            content: [
+              { type: "text" as const, text: `Image captured for ${result.range} on sheet "${result.worksheet.name}".` },
+              { type: "image" as const, data: result.imageBase64, mimeType: result.mimeType },
+            ],
+            details: result,
+          };
+        } catch (error) {
+          logToolError("get_range_image", params as Record<string, unknown>, error);
+          const message = error instanceof Error ? error.message : String(error);
+          return {
+            content: [{ type: "text" as const, text: `Error: ${message}` }],
+            details: null,
+            isError: true,
+          };
+        }
+      },
+    },
     createTool({
       name: "execute_office_js",
       label: "Execute Office JS",

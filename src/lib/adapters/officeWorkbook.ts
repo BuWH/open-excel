@@ -151,19 +151,164 @@ export class OfficeWorkbookAdapter implements WorkbookAdapter {
 
     return Excel.run(async (context: Excel.RequestContext) => {
       const worksheet = context.workbook.worksheets.getItem(input.sheetName);
-      const image = worksheet.getRange(input.range).getImage();
+
+      // Get range pixel bounds and cell image
+      const range = worksheet.getRange(input.range);
+      range.load(["top", "left", "width", "height"]);
+      const cellImage = range.getImage();
+
+      // Load all charts on the sheet
+      const charts = worksheet.charts;
+      charts.load("items");
       await context.sync();
+
+      const rangeTop = range.top;
+      const rangeLeft = range.left;
+      const rangeWidth = range.width;
+      const rangeHeight = range.height;
+
+      console.log("[getRangeImage] range bounds:", { top: rangeTop, left: rangeLeft, width: rangeWidth, height: rangeHeight });
+      console.log("[getRangeImage] charts on sheet:", charts.items.length);
+
+      // Find charts that overlap the range bounds
+      type ChartOverlay = {
+        top: number;
+        left: number;
+        width: number;
+        height: number;
+        imageRequest: OfficeExtension.ClientResult<string>;
+      };
+      const overlays: ChartOverlay[] = [];
+
+      for (const chart of charts.items) {
+        chart.load(["top", "left", "width", "height", "name"]);
+      }
+      await context.sync();
+
+      for (const chart of charts.items) {
+        const cRight = chart.left + chart.width;
+        const cBottom = chart.top + chart.height;
+        const rRight = rangeLeft + rangeWidth;
+        const rBottom = rangeTop + rangeHeight;
+
+        console.log("[getRangeImage] chart:", chart.name, { top: chart.top, left: chart.left, width: chart.width, height: chart.height, cRight, cBottom, rRight, rBottom });
+
+        // Check overlap
+        const overlaps = chart.left < rRight && cRight > rangeLeft && chart.top < rBottom && cBottom > rangeTop;
+        console.log("[getRangeImage] overlaps:", overlaps);
+
+        if (overlaps) {
+          const imageReq = chart.getImage();
+          overlays.push({
+            top: chart.top,
+            left: chart.left,
+            width: chart.width,
+            height: chart.height,
+            imageRequest: imageReq,
+          });
+        }
+      }
+
+      console.log("[getRangeImage] overlapping charts:", overlays.length);
+
+      if (overlays.length > 0) {
+        await context.sync();
+      }
+
+      // If no overlapping charts, just return the range image
+      if (overlays.length === 0) {
+        return {
+          success: true as const,
+          worksheet: { name: input.sheetName },
+          range: input.range,
+          mimeType: "image/png" as const,
+          imageBase64: cellImage.value,
+        };
+      }
+
+      // Composite: draw range image, then overlay charts
+      const composited = await this.compositeImages(
+        cellImage.value,
+        rangeTop,
+        rangeLeft,
+        rangeWidth,
+        rangeHeight,
+        overlays.map((o) => ({
+          base64: o.imageRequest.value,
+          top: o.top,
+          left: o.left,
+          width: o.width,
+          height: o.height,
+        })),
+      );
 
       return {
         success: true as const,
-        worksheet: {
-          name: input.sheetName,
-        },
+        worksheet: { name: input.sheetName },
         range: input.range,
         mimeType: "image/png" as const,
-        imageBase64: image.value,
+        imageBase64: composited,
       };
     });
+  }
+
+  private async compositeImages(
+    baseBase64: string,
+    rangeTop: number,
+    rangeLeft: number,
+    rangeWidth: number,
+    rangeHeight: number,
+    overlays: Array<{
+      base64: string;
+      top: number;
+      left: number;
+      width: number;
+      height: number;
+    }>,
+  ): Promise<string> {
+    // Use a scale factor for crisp rendering
+    const scale = 2;
+    const canvasWidth = Math.ceil(rangeWidth * scale);
+    const canvasHeight = Math.ceil(rangeHeight * scale);
+
+    const canvas = new OffscreenCanvas(canvasWidth, canvasHeight);
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Failed to create OffscreenCanvas context");
+
+    // Draw the base range image
+    const baseImg = await this.loadImage(baseBase64);
+    ctx.drawImage(baseImg, 0, 0, canvasWidth, canvasHeight);
+
+    // Draw each chart overlay at its position relative to the range
+    for (const overlay of overlays) {
+      const x = (overlay.left - rangeLeft) * scale;
+      const y = (overlay.top - rangeTop) * scale;
+      const w = overlay.width * scale;
+      const h = overlay.height * scale;
+
+      const chartImg = await this.loadImage(overlay.base64);
+      ctx.drawImage(chartImg, x, y, w, h);
+    }
+
+    // Export as PNG base64
+    const blob = await canvas.convertToBlob({ type: "image/png" });
+    const buffer = await blob.arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+    let binary = "";
+    for (const byte of bytes) {
+      binary += String.fromCharCode(byte);
+    }
+    return btoa(binary);
+  }
+
+  private loadImage(base64: string): Promise<ImageBitmap> {
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    const blob = new Blob([bytes], { type: "image/png" });
+    return createImageBitmap(blob);
   }
 
   async setCellRange(input: SetCellRangeInput) {
