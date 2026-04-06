@@ -6,12 +6,12 @@
   xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
   xsi:type="TaskPaneApp"
 >
-  <Id>b6d71685-6a5c-4c0d-9fa4-2f58bb7b1a5d</Id>
+  <Id>a4fe6143-6d9a-4980-8019-7f77ee713866</Id>
   <Version>1.0.0.0</Version>
   <ProviderName>Wenhe</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
-  <DisplayName DefaultValue="Claude in Excel Rebuild" />
-  <Description DefaultValue="Reverse-engineered Excel taskpane prototype powered by LiteLLM." />
+  <DisplayName DefaultValue="OpenExcel" />
+  <Description DefaultValue="AI-powered Excel assistant with tool-calling agent loop." />
   <IconUrl DefaultValue="https://localhost:5173/office/icon-64.png" />
   <HighResolutionIconUrl DefaultValue="https://localhost:5173/office/icon-80.png" />
   <SupportUrl DefaultValue="https://localhost:5173" />
@@ -37,14 +37,14 @@
           <FunctionFile resid="Taskpane.Url" />
           <ExtensionPoint xsi:type="PrimaryCommandSurface">
             <OfficeTab id="TabHome">
-              <Group id="ClaudeInExcelRebuild.Group">
+              <Group id="OpenExcel.Group">
                 <Label resid="GroupLabel" />
                 <Icon>
                   <bt:Image size="16" resid="Icon.16" />
                   <bt:Image size="32" resid="Icon.32" />
                   <bt:Image size="80" resid="Icon.80" />
                 </Icon>
-                <Control xsi:type="Button" id="ClaudeInExcelRebuild.Button">
+                <Control xsi:type="Button" id="OpenExcel.Button">
                   <Label resid="TaskpaneButton.Label" />
                   <Supertip>
                     <Title resid="TaskpaneButton.Label" />
@@ -56,7 +56,7 @@
                     <bt:Image size="80" resid="Icon.80" />
                   </Icon>
                   <Action xsi:type="ShowTaskpane">
-                    <TaskpaneId>ClaudeInExcelRebuild.Taskpane</TaskpaneId>
+                    <TaskpaneId>OpenExcel.Taskpane</TaskpaneId>
                     <SourceLocation resid="Taskpane.Url" />
                   </Action>
                 </Control>
@@ -77,18 +77,18 @@
         <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://localhost:5173" />
       </bt:Urls>
       <bt:ShortStrings>
-        <bt:String id="GetStarted.Title" DefaultValue="Claude in Excel Rebuild" />
-        <bt:String id="GroupLabel" DefaultValue="Claude Rebuild" />
-        <bt:String id="TaskpaneButton.Label" DefaultValue="Open Rebuild" />
+        <bt:String id="GetStarted.Title" DefaultValue="OpenExcel" />
+        <bt:String id="GroupLabel" DefaultValue="OpenExcel" />
+        <bt:String id="TaskpaneButton.Label" DefaultValue="Open Assistant" />
       </bt:ShortStrings>
       <bt:LongStrings>
         <bt:String
           id="GetStarted.Description"
-          DefaultValue="Local reverse-engineered Excel agent prototype powered by LiteLLM."
+          DefaultValue="AI-powered Excel assistant with a tool-calling agent loop, backed by any OpenAI-compatible endpoint."
         />
         <bt:String
           id="TaskpaneButton.Tooltip"
-          DefaultValue="Open the reverse-engineered Claude in Excel taskpane prototype."
+          DefaultValue="Open the OpenExcel AI assistant taskpane."
         />
       </bt:LongStrings>
     </Resources>

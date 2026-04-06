@@ -69,7 +69,7 @@ Option A (manual):
 bun run office:web:start
 ```
 
-This opens Excel Online and sideloads the add-in manifest. In the ribbon, click `More options` -> `Claude Rebuild` to open the taskpane.
+This opens Excel Online and sideloads the add-in manifest. In the ribbon, click `More options` -> `OpenExcel` to open the taskpane.
 
 Option B (CDM automated):
 
@@ -194,7 +194,7 @@ Use the timeline first when a test flakes. It shows whether the failure came fro
 ### Debugging notes
 
 - If the assistant stops after planning but never calls tools, inspect LiteLLM response parsing. Some providers split content and tool calls across multiple `choices`.
-- If Excel shows the wrong add-in, reopen from `More options` and explicitly choose `Claude Rebuild`.
+- If Excel shows the wrong add-in, reopen from `More options` and explicitly choose `OpenExcel`.
 - `get_range_image` returns Base64 PNG for visual debugging.
 - `get_cell_ranges` with `includeStyles=true` inspects presentation before restyling.
 
@@ -205,7 +205,7 @@ Use the timeline first when a test flakes. It shows whether the failure came fro
 | HTTPS taskpane cannot reach LiteLLM | Direct HTTP call from HTTPS iframe | Use `/api/litellm/v1` via Vite proxy |
 | Tool loop stalls | LiteLLM not responding or parsing error | Check LiteLLM logs, inspect debug timeline |
 | Agent plans but never calls tools | Provider splits content/tool_calls | Check response parsing in `client.ts` |
-| Wrong add-in opens | Multiple add-ins sideloaded | Explicitly choose "Claude Rebuild" from ribbon |
+| Wrong add-in opens | Multiple add-ins sideloaded | Explicitly choose "OpenExcel" from ribbon |
 | CDM cannot find taskpane elements | Iframe sandboxing | Switch to the taskpane frame context in CDM |
 
 ## When adding new features

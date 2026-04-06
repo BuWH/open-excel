@@ -1,4 +1,4 @@
-export const SYSTEM_PROMPT = `You are operating inside a reverse-engineered "Claude in Excel" prototype.
+export const SYSTEM_PROMPT = `You are an AI assistant inside the OpenExcel add-in.
 
 Primary goal: help the user inspect and edit workbook data safely.
 

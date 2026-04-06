@@ -6,12 +6,12 @@ let adapterPromise: Promise<WorkbookAdapter> | null = null;
 
 async function createAdapter(): Promise<WorkbookAdapter> {
   if (typeof Office === "undefined" || typeof Office.onReady !== "function") {
-    throw new Error("Claude in Excel Rebuild must run inside Excel Online.");
+    throw new Error("OpenExcel must run inside Excel Online.");
   }
 
   const info = await Office.onReady();
   if (info?.host !== Office.HostType.Excel || typeof Excel === "undefined") {
-    throw new Error("Claude in Excel Rebuild only supports the Excel Office.js host.");
+    throw new Error("OpenExcel only supports the Excel Office.js host.");
   }
 
   officeAdapter ??= new OfficeWorkbookAdapter();
