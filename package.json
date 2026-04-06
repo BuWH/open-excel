@@ -21,12 +21,12 @@
     "e2e:step": "node e2e/step.cjs"
   },
   "dependencies": {
+    "@assistant-ui/react": "^0.12.23",
     "@mariozechner/pi-agent-core": "^0.65.2",
     "@mariozechner/pi-ai": "^0.65.2",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-router-dom": "^7.9.6",
-    "zod": "^4.1.12",
     "zustand": "^5.0.8"
   },
   "devDependencies": {

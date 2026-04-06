@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { DEFAULT_PROVIDER, normaliseProvider } from "../lib/litellm/provider";
-import type { ProviderConfig } from "../lib/types/llm";
+import type { ProviderConfig } from "../lib/provider/config";
+import { DEFAULT_PROVIDER, normaliseProvider } from "../lib/provider/config";
 
 type SessionState = {
   provider: ProviderConfig;
@@ -14,21 +14,6 @@ type SessionState = {
 };
 
 export const defaultProvider = DEFAULT_PROVIDER;
-
-const LEGACY_DEFAULT_MODELS = new Set(["gpt-4.1", "gpt-5.1", "gpt-5.1-mini"]);
-
-function migrateProvider(provider: ProviderConfig | undefined) {
-  const nextProvider = normaliseProvider(provider ?? DEFAULT_PROVIDER);
-
-  if (LEGACY_DEFAULT_MODELS.has(nextProvider.model)) {
-    return {
-      ...nextProvider,
-      model: DEFAULT_PROVIDER.model,
-    };
-  }
-
-  return nextProvider;
-}
 
 export const useSessionStore = create<SessionState>()(
   persist(
@@ -48,13 +33,13 @@ export const useSessionStore = create<SessionState>()(
     }),
     {
       name: "claude-in-excel-rebuild",
-      version: 3,
+      version: 4,
       migrate: (persistedState) => {
         const state = persistedState as Partial<SessionState> | undefined;
 
         return {
           onboardingCompleted: state?.onboardingCompleted ?? false,
-          provider: migrateProvider(state?.provider),
+          provider: normaliseProvider(state?.provider ?? DEFAULT_PROVIDER),
           termsAccepted: state?.termsAccepted ?? false,
         };
       },

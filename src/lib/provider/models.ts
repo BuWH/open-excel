@@ -1,4 +1,4 @@
-import { getBaseUrlValidationError, normaliseBaseUrl } from "./provider";
+import { getBaseUrlValidationError, normaliseBaseUrl } from "./config";
 
 type ModelsResponse = {
   data?: Array<{ id?: string }>;
@@ -16,7 +16,7 @@ function buildHeaders(apiKey: string): HeadersInit {
   return { "Content-Type": "application/json" };
 }
 
-export async function listLiteLlmModels(baseUrl: string, apiKey: string) {
+export async function listProviderModels(baseUrl: string, apiKey: string) {
   const validationError = getBaseUrlValidationError(baseUrl);
   if (validationError) {
     throw new Error(validationError);

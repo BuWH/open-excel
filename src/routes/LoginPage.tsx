@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { listLiteLlmModels } from "../lib/litellm/models";
-import { getBaseUrlValidationError, normaliseProvider } from "../lib/litellm/provider";
+import { getBaseUrlValidationError, normaliseProvider } from "../lib/provider/config";
+import { listProviderModels } from "../lib/provider/models";
 import { defaultProvider, useSessionStore } from "../state/sessionStore";
 
 export function LoginPage() {
@@ -30,7 +30,7 @@ export function LoginPage() {
       setLoading(true);
       setError(null);
       try {
-        const discovered = await listLiteLlmModels(baseUrl, apiKey);
+        const discovered = await listProviderModels(baseUrl, apiKey);
         if (!cancelled) {
           setModels(discovered);
           if (!model && discovered[0]) {
@@ -58,11 +58,10 @@ export function LoginPage() {
   return (
     <main className="route-shell">
       <section className="hero-card">
-        <p className="eyebrow">Reverse-Engineered Prototype</p>
-        <h1>Claude in Excel rebuild</h1>
+        <p className="eyebrow">Provider Configuration</p>
+        <h1>Claude in Excel</h1>
         <p className="lead">
-          This prototype recreates the taskpane boot flow, routed UI shell, workbook tool surface,
-          and tool-calling loop, but swaps Anthropic auth for a local LiteLLM endpoint.
+          Configure your LLM provider endpoint and model to use with the Excel assistant.
         </p>
 
         <form
@@ -82,12 +81,12 @@ export function LoginPage() {
           }}
         >
           <label>
-            LiteLLM base URL
+            Base URL
             <input value={baseUrl} onChange={(event) => setBaseUrl(event.target.value)} />
           </label>
           <p className="field-hint">
             Use the default `/api/litellm/v1` path for Excel Online sideload. The dev server proxies
-            it to your local LiteLLM upstream.
+            it to your configured upstream.
           </p>
           <label>
             API key
@@ -101,11 +100,11 @@ export function LoginPage() {
           <label>
             Model
             <input
-              list="litellm-models"
+              list="provider-models"
               value={model}
               onChange={(event) => setModel(event.target.value)}
             />
-            <datalist id="litellm-models">
+            <datalist id="provider-models">
               {models.map((item) => (
                 <option key={item} value={item} />
               ))}
@@ -113,7 +112,7 @@ export function LoginPage() {
           </label>
 
           <div className="status-row">
-            <span>{loading ? "Discovering models…" : `${models.length} models visible`}</span>
+            <span>{loading ? "Discovering models..." : `${models.length} models visible`}</span>
             <button
               className="ghost-button"
               type="button"
@@ -129,7 +128,7 @@ export function LoginPage() {
 
           {error ? <p className="error-callout">{error}</p> : null}
 
-          <button type="submit">Continue with LiteLLM</button>
+          <button type="submit">Continue</button>
         </form>
       </section>
     </main>

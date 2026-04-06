@@ -6,7 +6,7 @@
  *   2. Open the Excel Online workbook
  *   3. Sideload manifest.xml (if not already sideloaded)
  *   4. Open the sideloaded add-in
- *   5. Navigate the add-in boot flow (login -> terms -> onboarding)
+ *   5. Verify the chat UI is ready (direct to chat, no boot flow)
  *   6. Submit a prompt and verify the agent writes to the workbook
  *
  * Run:  npx playwright test e2e/e2e.spec.ts --headed
@@ -54,7 +54,7 @@ async function loginIfNeeded(page: Page) {
   await pw.press("Enter");
   await page.waitForTimeout(5_000);
 
-  // "Stay signed in?" → Yes
+  // "Stay signed in?" -> Yes
   const stayBtn = page.locator('[data-testid="primaryButton"]');
   if ((await stayBtn.count()) > 0) {
     await stayBtn.click();
@@ -120,10 +120,10 @@ function findTaskpaneFrame(page: Page): Frame | null {
 
 /**
  * Sideload the manifest.xml via the Office Add-ins dialog.
- * Path: Home tab → Add-ins → More Add-ins → My Add-ins → Manage → Upload.
+ * Path: Home tab -> Add-ins -> More Add-ins -> My Add-ins -> Manage -> Upload.
  */
 async function sideloadManifest(page: Page, excelFrame: FrameLocator) {
-  // Home tab → Add-ins button
+  // Home tab -> Add-ins button
   await excelFrame.getByRole("tab", { name: /Home|开始/ }).click();
   await page.waitForTimeout(1_000);
   await excelFrame.getByRole("button", { name: /Add-ins|加载项/ }).click();
@@ -138,7 +138,7 @@ async function sideloadManifest(page: Page, excelFrame: FrameLocator) {
   await addinsFrame.getByRole("tab", { name: /MY ADD-INS|我的加载项/i }).click();
   await page.waitForTimeout(2_000);
 
-  // Manage My Add-ins → Upload My Add-in
+  // Manage My Add-ins -> Upload My Add-in
   await addinsFrame.getByRole("button", { name: /Manage My Add-ins|管理我的加载项/i }).click();
   await page.waitForTimeout(1_000);
   await addinsFrame.getByRole("menuitem", { name: /Upload My Add-in|上传我的加载项/i }).click();
@@ -166,51 +166,6 @@ async function openAddin(page: Page, excelFrame: FrameLocator) {
   await page.waitForTimeout(1_000);
   await excelFrame.getByRole("menuitem", { name: "Open Rebuild" }).click();
   await page.waitForTimeout(5_000);
-}
-
-/**
- * Navigate through the add-in boot flow (Login → Terms → Onboarding)
- * if not already on the workbench.
- */
-async function navigateAddinBootFlow(page: Page, frame: Frame) {
-  // Login page: click "Continue with LiteLLM" (uses default form values)
-  const continueBtn = frame.getByRole("button", { name: /Continue with LiteLLM/i });
-  if ((await continueBtn.count()) > 0) {
-    await continueBtn.click();
-    await page.waitForTimeout(2_000);
-  }
-
-  // Terms page
-  const termsBtn = frame.getByRole("button", { name: /I understand/i });
-  if ((await termsBtn.count()) > 0) {
-    await termsBtn.click();
-    await page.waitForTimeout(2_000);
-  }
-
-  // Onboarding page
-  const launchBtn = frame.getByRole("button", { name: /Launch workbench/i });
-  if ((await launchBtn.count()) > 0) {
-    await launchBtn.click();
-    await page.waitForTimeout(3_000);
-  }
-}
-
-/**
- * Set a React-controlled textarea value using the native setter
- * so that React's onChange fires properly.
- */
-async function setReactTextareaValue(frame: Frame, selector: string, value: string) {
-  const textarea = frame.locator(selector);
-  await textarea.waitFor({ timeout: 10_000 });
-  await textarea.evaluate((el: HTMLTextAreaElement, val: string) => {
-    const setter = Object.getOwnPropertyDescriptor(
-      window.HTMLTextAreaElement.prototype,
-      "value",
-    )?.set;
-    setter?.call(el, val);
-    el.dispatchEvent(new Event("input", { bubbles: true }));
-    el.dispatchEvent(new Event("change", { bubbles: true }));
-  }, value);
 }
 
 // ---------------------------------------------------------------------------
@@ -322,15 +277,15 @@ test.describe("Open Excel E2E", () => {
     expect(taskpane!.url()).toContain("localhost:5173");
   });
 
-  test("navigate add-in boot flow to workbench", async () => {
+  test("verify chat UI is ready", async () => {
     const taskpane = findTaskpaneFrame(page);
     expect(taskpane).not.toBeNull();
-    await navigateAddinBootFlow(page, taskpane!);
 
-    // Verify workbench is ready: prompt input, run button, and message list all visible
-    await expect(taskpane!.locator('[data-testid="prompt-input"]')).toBeVisible({ timeout: 10_000 });
-    await expect(taskpane!.locator('[data-testid="run-agent"]')).toBeVisible();
-    await expect(taskpane!.locator('[data-testid="message-list"]')).toBeVisible();
+    // The app now loads directly to the chat interface (no boot flow).
+    // Verify the composer input and header are visible.
+    await expect(taskpane!.locator(".aui-composer-input")).toBeVisible({ timeout: 15_000 });
+    await expect(taskpane!.locator(".aui-composer-send")).toBeVisible();
+    await expect(taskpane!.locator(".app-title")).toBeVisible();
   });
 
   test("submit a prompt and verify the agent writes to the workbook", async () => {
@@ -346,7 +301,9 @@ test.describe("Open Excel E2E", () => {
 
     // Read current B1 value from the workbook preview to confirm it's different
     // Navigate to B1 via the Name Box in Excel
-    const nameBox = excelFrame.locator('input[aria-label*="名称框"], input[aria-label*="Name Box"]').first();
+    const nameBox = excelFrame
+      .locator('input[aria-label*="名称框"], input[aria-label*="Name Box"]')
+      .first();
     await nameBox.click();
     await nameBox.fill("B1");
     await nameBox.press("Enter");
@@ -356,26 +313,37 @@ test.describe("Open Excel E2E", () => {
     // The unique value should NOT already be in B1
     expect(valueBefore.trim()).not.toBe(uniqueValue);
 
-    // Type the prompt
-    await setReactTextareaValue(taskpane!, '[data-testid="prompt-input"]', prompt);
+    // Type into the assistant-ui composer input
+    const composerInput = taskpane!.locator(".aui-composer-input");
+    await composerInput.waitFor({ timeout: 10_000 });
+    await composerInput.fill(prompt);
 
-    // Click run
-    const runBtn = taskpane!.locator('[data-testid="run-agent"]');
-    await expect(runBtn).toBeEnabled();
-    await runBtn.click();
+    // Click the send button
+    const sendBtn = taskpane!.locator(".aui-composer-send");
+    await expect(sendBtn).toBeVisible();
+    await sendBtn.click();
 
-    // Button should show "Running..." while the agent is working
-    await expect(runBtn).toHaveText(/Running/i, { timeout: 5_000 });
+    // Wait for the agent to finish: the user message should appear, then
+    // an assistant message should appear after the agent completes.
+    // The assistant-ui composer input gets cleared after sending.
+    await expect(composerInput).toHaveValue("", { timeout: 5_000 });
 
-    // Wait for agent to finish (busy state clears)
-    await expect(runBtn).toHaveText("Run agent", { timeout: 60_000 });
+    // Wait for at least one assistant message to appear
+    const assistantMessages = taskpane!.locator(".aui-message-assistant");
+    await expect(assistantMessages.first()).toBeVisible({ timeout: 90_000 });
 
-    // Verify that the agent produced an assistant response
-    const assistantMessages = taskpane!.locator('[data-testid="message-list"] .role-assistant');
-    const assistantCount = await assistantMessages.count();
-    expect(assistantCount).toBeGreaterThan(0);
+    // Wait for the agent to stop running (composer re-enables)
+    // The send button should be visible and the input should be editable
+    await expect(composerInput).toBeEditable({ timeout: 90_000 });
 
-    // Navigate to B1 again and verify the cell now contains our unique value
+    // Give Excel a moment to sync after the agent finishes writing
+    await page.waitForTimeout(3_000);
+
+    // Navigate to a different cell first to force Excel to refresh, then back to B1
+    await nameBox.click();
+    await nameBox.fill("A1");
+    await nameBox.press("Enter");
+    await page.waitForTimeout(500);
     await nameBox.click();
     await nameBox.fill("B1");
     await nameBox.press("Enter");

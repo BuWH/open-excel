@@ -38,7 +38,11 @@ async function launchWithState() {
     args: ["--disable-blink-features=AutomationControlled"],
   });
   const ctx = hasState
-    ? await browser.newContext({ storageState: STATE_PATH, ignoreHTTPSErrors: true, viewport: { width: 1440, height: 900 } })
+    ? await browser.newContext({
+        storageState: STATE_PATH,
+        ignoreHTTPSErrors: true,
+        viewport: { width: 1440, height: 900 },
+      })
     : await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: 1440, height: 900 } });
 
   // Remove WebAuthn/FIDO API so Microsoft login skips the passkey prompt
@@ -228,7 +232,10 @@ async function step2() {
     const tabs = await wacFrame.locator("[role='tab']").allTextContents();
     console.log("Tabs in Excel:", JSON.stringify(tabs.filter(Boolean)));
     const buttons = await wacFrame.locator("button").allTextContents();
-    const btnTexts = buttons.filter(Boolean).map(b => b.trim()).filter(Boolean);
+    const btnTexts = buttons
+      .filter(Boolean)
+      .map((b) => b.trim())
+      .filter(Boolean);
     console.log("Buttons (first 40):", JSON.stringify(btnTexts.slice(0, 40)));
   } else {
     console.log("WacFrame_Excel_0 not found.");
@@ -244,10 +251,12 @@ async function navigateToExcel(page) {
   await page.goto(EXCEL_URL, { waitUntil: "domcontentloaded", timeout: 60000 });
 
   // Wait for account picker, login, or Excel iframe
-  await page.waitForSelector(
-    '#newSessionLink, [data-testid="0300"], #i0116, iframe[name="WacFrame_Excel_0"]',
-    { timeout: 30000 },
-  ).catch(() => {});
+  await page
+    .waitForSelector(
+      '#newSessionLink, [data-testid="0300"], #i0116, iframe[name="WacFrame_Excel_0"]',
+      { timeout: 30000 },
+    )
+    .catch(() => {});
   await page.waitForTimeout(1000);
 
   // Click saved account if present
@@ -357,14 +366,18 @@ async function step4() {
     }
 
     // Click "Manage My Add-ins" / "Upload My Add-in"
-    const manageBtn = addinsFrame.getByRole("button", { name: /Manage My Add-ins|管理我的加载项/i });
+    const manageBtn = addinsFrame.getByRole("button", {
+      name: /Manage My Add-ins|管理我的加载项/i,
+    });
     if ((await manageBtn.count()) > 0) {
       console.log("Found Manage My Add-ins");
       await manageBtn.click();
       await page.waitForTimeout(1000);
     }
 
-    const uploadMenuItem = addinsFrame.getByRole("menuitem", { name: /Upload My Add-in|上传我的加载项/i });
+    const uploadMenuItem = addinsFrame.getByRole("menuitem", {
+      name: /Upload My Add-in|上传我的加载项/i,
+    });
     if ((await uploadMenuItem.count()) > 0) {
       console.log("Found Upload My Add-in");
       await uploadMenuItem.click();
@@ -418,7 +431,7 @@ async function step5() {
 
   // Click overflow "More options" button (the ribbon overflow, not split buttons)
   console.log("Looking for More options...");
-  const moreOptions = excelFrame.locator('#RibbonOverflowMenu-overflow');
+  const moreOptions = excelFrame.locator("#RibbonOverflowMenu-overflow");
   if ((await moreOptions.count()) > 0) {
     await moreOptions.click();
     await page.waitForTimeout(2000);
@@ -483,7 +496,7 @@ async function step6() {
   if (!taskpaneFrame) {
     // Open the add-in via ribbon overflow menu
     console.log("Taskpane not open, opening via ribbon overflow...");
-    const moreOptions = excelFrame.locator('#RibbonOverflowMenu-overflow');
+    const moreOptions = excelFrame.locator("#RibbonOverflowMenu-overflow");
     if ((await moreOptions.count()) > 0) {
       await moreOptions.click();
       await page.waitForTimeout(1000);
@@ -519,11 +532,8 @@ async function step6() {
   // Dump the current page state
   const pageContent = await taskpaneFrame.content();
   console.log("Taskpane HTML length:", pageContent.length);
-  console.log("Contains 'LiteLLM':", pageContent.includes("LiteLLM"));
-  console.log("Contains 'Continue':", pageContent.includes("Continue"));
-  console.log("Contains 'understand':", pageContent.includes("understand"));
-  console.log("Contains 'Launch':", pageContent.includes("Launch"));
-  console.log("Contains 'prompt-input':", pageContent.includes("prompt-input"));
+  console.log("Contains 'aui-composer':", pageContent.includes("aui-composer"));
+  console.log("Contains 'app-title':", pageContent.includes("app-title"));
 
   // List all visible buttons
   const allButtons = await taskpaneFrame.locator("button").allTextContents();
@@ -535,47 +545,15 @@ async function step6() {
 
   await snap(page, "taskpane-initial");
 
-  // Navigate through the add-in flow: Login -> Terms -> Onboarding -> Workbench
-  // Each step checks if the relevant element exists before clicking
-
-  // Login page: "Continue with LiteLLM"
-  const continueBtn = taskpaneFrame.getByRole("button", { name: /Continue with LiteLLM/i });
-  if ((await continueBtn.count()) > 0) {
-    console.log("On login page, clicking Continue...");
-    await continueBtn.click();
-    await page.waitForTimeout(2000);
-    await snap(page, "after-login-continue");
-  }
-
-  // Terms page: "I understand the current scope"
-  const termsBtn = taskpaneFrame.getByRole("button", { name: /I understand/i });
-  if ((await termsBtn.count()) > 0) {
-    console.log("On terms page, accepting...");
-    await termsBtn.click();
-    await page.waitForTimeout(2000);
-    await snap(page, "after-terms");
-  }
-
-  // Onboarding page: "Launch workbench"
-  const launchBtn = taskpaneFrame.getByRole("button", { name: /Launch workbench/i });
-  if ((await launchBtn.count()) > 0) {
-    console.log("On onboarding page, launching...");
-    await launchBtn.click();
-    await page.waitForTimeout(3000);
-    await snap(page, "after-onboarding");
-  }
-
-  await snap(page, "taskpane-state");
-
-  // Check for the prompt textarea (workbench)
-  const promptInput = taskpaneFrame.locator('[data-testid="prompt-input"]');
-  if ((await promptInput.count()) > 0) {
-    console.log("Found prompt input! Workbench is ready.");
+  // The app now loads directly to the chat interface (no boot flow).
+  // Check for the composer input
+  const composerInput = taskpaneFrame.locator(".aui-composer-input");
+  if ((await composerInput.count()) > 0) {
+    console.log("Found composer input! Chat UI is ready.");
   } else {
-    console.log("Prompt input not found. Current buttons:");
+    console.log("Composer input not found. Current buttons:");
     const btns = await taskpaneFrame.locator("button").allTextContents();
     console.log(JSON.stringify(btns.filter(Boolean)));
-    // Check current URL hash/path
     const url = taskpaneFrame.url();
     console.log("Taskpane URL:", url);
   }
@@ -608,7 +586,7 @@ async function step7() {
 
   if (!taskpaneFrame) {
     console.log("Taskpane not open, opening via ribbon overflow...");
-    const moreOptions = excelFrame.locator('#RibbonOverflowMenu-overflow');
+    const moreOptions = excelFrame.locator("#RibbonOverflowMenu-overflow");
     if ((await moreOptions.count()) > 0) {
       await moreOptions.click();
       await page.waitForTimeout(1000);
@@ -634,89 +612,53 @@ async function step7() {
 
   console.log("Taskpane found:", taskpaneFrame.url().substring(0, 80));
 
-  // Ensure we're on the workbench page
-  // Check for the prompt textarea
-  const promptInput = taskpaneFrame.locator('[data-testid="prompt-input"]');
-  const promptCount = await promptInput.count();
-  console.log("Prompt input count:", promptCount);
+  // Ensure we're on the chat page (no boot flow needed)
+  // Check for the composer input
+  const composerInput = taskpaneFrame.locator('.aui-composer-input');
+  const composerCount = await composerInput.count();
+  console.log("Composer input count:", composerCount);
 
-  if (promptCount === 0) {
-    // Maybe still on login/terms/onboarding - navigate through
-    const continueBtn = taskpaneFrame.getByRole("button", { name: /Continue with LiteLLM/i });
-    if ((await continueBtn.count()) > 0) {
-      await continueBtn.click();
-      await page.waitForTimeout(2000);
-    }
-    const termsBtn = taskpaneFrame.getByRole("button", { name: /I understand/i });
-    if ((await termsBtn.count()) > 0) {
-      await termsBtn.click();
-      await page.waitForTimeout(2000);
-    }
-    const launchBtn = taskpaneFrame.getByRole("button", { name: /Launch workbench/i });
-    if ((await launchBtn.count()) > 0) {
-      await launchBtn.click();
-      await page.waitForTimeout(3000);
-    }
+  if (composerCount === 0) {
+    console.log("Composer not found. Current content:");
+    const btns = await taskpaneFrame.locator("button").allTextContents();
+    console.log(JSON.stringify(btns.filter(Boolean)));
   }
 
   await snap(page, "workbench-ready");
 
-  // Now interact with the prompt
-  // React controlled textarea needs native value setter to trigger onChange
-  console.log("Typing query into prompt input...");
-  const textarea = taskpaneFrame.locator('[data-testid="prompt-input"]');
-  await textarea.waitFor({ timeout: 10000 });
-
-  // Use evaluate to set value on React controlled input
-  await textarea.evaluate((el) => {
-    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-      window.HTMLTextAreaElement.prototype,
-      "value"
-    ).set;
-    nativeInputValueSetter.call(el, "Write hello world in cell A1");
-    el.dispatchEvent(new Event("input", { bubbles: true }));
-    el.dispatchEvent(new Event("change", { bubbles: true }));
-  });
+  // Type a query into the composer
+  console.log("Typing query into composer...");
+  await composerInput.waitFor({ timeout: 10000 });
+  await composerInput.fill("Write hello world in cell A1");
   await page.waitForTimeout(500);
 
   await snap(page, "query-typed");
 
   // Check if the value was set
-  const inputValue = await textarea.inputValue();
+  const inputValue = await composerInput.inputValue();
   console.log("Input value after typing:", JSON.stringify(inputValue));
 
-  // Click the run button
-  const runBtn = taskpaneFrame.locator('[data-testid="run-agent"]');
-  const runBtnCount = await runBtn.count();
-  console.log("Run button count:", runBtnCount);
+  // Click the send button
+  const sendBtn = taskpaneFrame.locator('.aui-composer-send');
+  const sendBtnCount = await sendBtn.count();
+  console.log("Send button count:", sendBtnCount);
 
-  if (runBtnCount > 0) {
-    const isDisabled = await runBtn.isDisabled();
-    console.log("Run button disabled:", isDisabled);
-    if (!isDisabled) {
-      console.log("Clicking run...");
-      await runBtn.click();
-      await page.waitForTimeout(10000); // Wait for agent to process
-      await snap(page, "after-run");
+  if (sendBtnCount > 0) {
+    console.log("Clicking send...");
+    await sendBtn.click();
+    await page.waitForTimeout(10000); // Wait for agent to process
+    await snap(page, "after-send");
 
-      // Check for response in message list
-      const messageList = taskpaneFrame.locator('[data-testid="message-list"]');
-      if ((await messageList.count()) > 0) {
-        const messages = await messageList.textContent();
-        console.log("Message list content (first 500 chars):", messages.substring(0, 500));
-      }
-    } else {
-      console.log("Run button is disabled, checking why...");
-      // Maybe the input didn't get set properly - try fill instead
-      await textarea.click();
-      await textarea.fill("Write hello world in cell A1");
-      await page.waitForTimeout(500);
-      const val2 = await textarea.inputValue();
-      console.log("After fill:", JSON.stringify(val2));
-      await snap(page, "after-fill");
+    // Check for assistant messages
+    const assistantMessages = taskpaneFrame.locator('.aui-message-assistant');
+    const msgCount = await assistantMessages.count();
+    console.log("Assistant messages:", msgCount);
+    if (msgCount > 0) {
+      const content = await assistantMessages.first().textContent();
+      console.log("First assistant message (first 500 chars):", content.substring(0, 500));
     }
   } else {
-    console.log("Run button not found. All buttons:");
+    console.log("Send button not found. All buttons:");
     const btns = await taskpaneFrame.locator("button").allTextContents();
     console.log(JSON.stringify(btns.filter(Boolean)));
   }
@@ -741,59 +683,61 @@ async function step8() {
   // Find or open taskpane
   let taskpaneFrame = null;
   for (const f of page.frames()) {
-    if (f.url().includes("localhost:5173")) { taskpaneFrame = f; break; }
+    if (f.url().includes("localhost:5173")) {
+      taskpaneFrame = f;
+      break;
+    }
   }
   if (!taskpaneFrame) {
     console.log("Opening add-in...");
-    const overflow = excelFrame.locator('#RibbonOverflowMenu-overflow');
+    const overflow = excelFrame.locator("#RibbonOverflowMenu-overflow");
     await overflow.click();
     await page.waitForTimeout(1000);
     await excelFrame.getByRole("menuitem", { name: "Open Rebuild" }).click();
     await page.waitForTimeout(5000);
     for (const f of page.frames()) {
-      if (f.url().includes("localhost:5173")) { taskpaneFrame = f; break; }
+      if (f.url().includes("localhost:5173")) {
+        taskpaneFrame = f;
+        break;
+      }
     }
   }
-  if (!taskpaneFrame) { console.log("ERROR: no taskpane"); await browser.close(); return; }
+  if (!taskpaneFrame) {
+    console.log("ERROR: no taskpane");
+    await browser.close();
+    return;
+  }
 
-  // Navigate boot flow if needed
-  const continueBtn = taskpaneFrame.getByRole("button", { name: /Continue with LiteLLM/i });
-  if ((await continueBtn.count()) > 0) { await continueBtn.click(); await page.waitForTimeout(2000); }
-  const termsBtn = taskpaneFrame.getByRole("button", { name: /I understand/i });
-  if ((await termsBtn.count()) > 0) { await termsBtn.click(); await page.waitForTimeout(2000); }
-  const launchBtn = taskpaneFrame.getByRole("button", { name: /Launch workbench/i });
-  if ((await launchBtn.count()) > 0) { await launchBtn.click(); await page.waitForTimeout(3000); }
-
+  // The app loads directly to the chat interface (no boot flow)
   // Reset conversation first
-  const resetBtn = taskpaneFrame.getByRole("button", { name: /Reset conversation/i });
-  if ((await resetBtn.count()) > 0) {
-    await resetBtn.click();
+  const newChatBtn = taskpaneFrame.getByRole("button", { name: /New Chat/i });
+  if ((await newChatBtn.count()) > 0) {
+    await newChatBtn.click();
     await page.waitForTimeout(1000);
   }
 
-  const QUERY = "Create a table: A1=Name, B1=Score, C1=Grade. Then fill rows 2-5 with sample student data (4 students). In C2:C5, use a formula: if Score>=90 then A, if >=80 then B, if >=70 then C, else D. Finally put the average score in B6 with a label Average in A6.";
+  const QUERY =
+    "Create a table: A1=Name, B1=Score, C1=Grade. Then fill rows 2-5 with sample student data (4 students). In C2:C5, use a formula: if Score>=90 then A, if >=80 then B, if >=70 then C, else D. Finally put the average score in B6 with a label Average in A6.";
 
   console.log("Setting query...");
-  const textarea = taskpaneFrame.locator('[data-testid="prompt-input"]');
-  await textarea.waitFor({ timeout: 10000 });
-  await textarea.evaluate((el, val) => {
-    const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value").set;
-    setter.call(el, val);
-    el.dispatchEvent(new Event("input", { bubbles: true }));
-    el.dispatchEvent(new Event("change", { bubbles: true }));
-  }, QUERY);
+  const composerInput = taskpaneFrame.locator('.aui-composer-input');
+  await composerInput.waitFor({ timeout: 10000 });
+  await composerInput.fill(QUERY);
   await page.waitForTimeout(500);
 
-  console.log("Clicking run...");
-  const runBtn = taskpaneFrame.locator('[data-testid="run-agent"]');
-  await runBtn.click();
+  console.log("Clicking send...");
+  const sendBtn = taskpaneFrame.locator('.aui-composer-send');
+  await sendBtn.click();
 
-  // Wait for agent to finish — poll the button text
+  // Wait for agent to finish -- poll for assistant messages
   console.log("Waiting for agent to finish...");
   let elapsed = 0;
   while (elapsed < 120000) {
-    const text = await runBtn.textContent();
-    if (text && text.includes("Run agent")) break;
+    const assistantMsgs = taskpaneFrame.locator('.aui-message-assistant');
+    const count = await assistantMsgs.count();
+    // Check if the composer input is editable (agent done)
+    const isEditable = await composerInput.isEditable().catch(() => false);
+    if (count > 0 && isEditable) break;
     await page.waitForTimeout(2000);
     elapsed += 2000;
     if (elapsed % 10000 === 0) console.log(`  still running... (${elapsed / 1000}s)`);
@@ -802,14 +746,13 @@ async function step8() {
 
   await snap(page, "complex-result");
 
-  // Read all messages
-  const messageList = taskpaneFrame.locator('[data-testid="message-list"]');
-  const allMessages = await messageList.locator("article").all();
-  console.log(`\n=== ${allMessages.length} messages ===`);
+  // Read assistant messages
+  const assistantMessages = taskpaneFrame.locator('.aui-message-assistant');
+  const allMessages = await assistantMessages.all();
+  console.log(`\n=== ${allMessages.length} assistant messages ===`);
   for (let i = 0; i < allMessages.length; i++) {
-    const role = await allMessages[i].locator(".message-role").textContent().catch(() => "?");
-    const content = await allMessages[i].locator("pre").textContent().catch(() => "");
-    console.log(`\n[${i}] ${role}:`);
+    const content = await allMessages[i].textContent().catch(() => "");
+    console.log(`\n[${i}]:`);
     console.log(content.substring(0, 600));
   }
 
@@ -825,4 +768,7 @@ if (!fn) {
   console.error("Unknown step:", step);
   process.exit(1);
 }
-fn().catch((e) => { console.error(e); process.exit(1); });
+fn().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});

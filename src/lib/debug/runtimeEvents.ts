@@ -39,12 +39,6 @@ export type AgentRuntimeEvent =
       content: string;
     });
 
-export type AgentRuntimeEventDraft = AgentRuntimeEvent extends infer Event
-  ? Event extends unknown
-    ? Omit<Event, "id">
-    : never
-  : never;
-
 export type DebugTurnRecord = {
   id: string;
   prompt: string;
