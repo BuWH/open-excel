@@ -15,7 +15,10 @@
     "office:web:start": "office-addin-debugging start manifest.xml web --app excel --no-live-reload --dev-server \"bun run office:serve\"",
     "office:web:stop": "office-addin-debugging stop manifest.xml",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit -p tsconfig.app.json"
+    "typecheck": "tsc --noEmit -p tsconfig.app.json",
+    "e2e": "playwright test",
+    "e2e:headed": "playwright test --headed",
+    "e2e:step": "node e2e/step.cjs"
   },
   "dependencies": {
     "@mariozechner/pi-agent-core": "^0.65.2",
