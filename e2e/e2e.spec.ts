@@ -235,6 +235,7 @@ test.describe("Open Excel E2E", () => {
   let savedContext: BrowserContext;
   let page: Page;
   let excelFrame: FrameLocator;
+  const consoleLogs: string[] = [];
 
   test.beforeAll(async ({ browser }) => {
     const hasState = fs.existsSync(STATE_PATH);
@@ -244,6 +245,21 @@ test.describe("Open Excel E2E", () => {
 
     await disableFido(savedContext);
     page = await savedContext.newPage();
+
+    // Capture console logs from all frames (including taskpane iframe)
+    page.on("console", (msg) => {
+      consoleLogs.push(`[${msg.type()}] ${msg.text()}`);
+    });
+  });
+
+  test.afterEach(async ({}, testInfo) => {
+    if (testInfo.status !== "passed") {
+      console.log(`--- Console logs for failed test: ${testInfo.title} ---`);
+      for (const log of consoleLogs) {
+        console.log(log);
+      }
+      console.log("--- End console logs ---");
+    }
   });
 
   test.afterAll(async () => {
@@ -320,6 +336,9 @@ test.describe("Open Excel E2E", () => {
   test("submit a prompt and verify the agent writes to the workbook", async () => {
     const taskpane = findTaskpaneFrame(page);
     expect(taskpane).not.toBeNull();
+
+    // Clear previous console logs
+    consoleLogs.length = 0;
 
     // Type a simple query
     await setReactTextareaValue(taskpane!, '[data-testid="prompt-input"]', "Write hello world in cell A1");
