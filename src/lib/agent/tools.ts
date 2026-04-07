@@ -139,7 +139,7 @@ export function createWorkbookTools(adapter: WorkbookAdapter): AgentTool[] {
       name: "execute_office_js",
       label: "Execute Office JS",
       description:
-        "Execute raw Office.js code in Excel. Prefer structured tools first, but use this for formatting, layout, tables, and other host-only actions.",
+        "Execute Office.js code inside an existing Excel.run() context. Two variables are in scope: `Excel` (namespace) and `context` (RequestContext). Do NOT call Excel.run() or use import/require. Follow the load-sync-read pattern for all property reads. Return plain JSON, never proxy objects. Use for formatting, layout, tables, autofit, charts, conditional formatting, and other host-only actions that structured tools cannot do.",
       parameters: ExecuteOfficeJsParams,
       execute: (params) => adapter.executeOfficeJs(params.code),
     }),
