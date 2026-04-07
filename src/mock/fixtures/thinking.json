@@ -1,0 +1,180 @@
+{
+  "name": "Thinking Blocks",
+  "description": "Demonstrates thinking/reasoning blocks with tool calls",
+  "autoPlay": true,
+  "streamDelay": 800,
+  "turns": [
+    {
+      "userMessage": "Analyze the sales data and tell me which product is performing best",
+      "events": [
+        { "type": "turn_start", "delay": 200 },
+        {
+          "type": "turn_end",
+          "delay": 100,
+          "message": {
+            "content": [
+              {
+                "type": "thinking",
+                "thinking": "The user wants to know which product is performing best. I should first check what sheets are available, then read the sales data to compare products."
+              },
+              { "type": "toolCall", "id": "tc_t1", "name": "get_sheets_metadata", "arguments": {} }
+            ],
+            "stopReason": "toolUse",
+            "usage": { "input": 950, "output": 60 }
+          }
+        },
+        {
+          "type": "tool_execution_start",
+          "toolCallId": "tc_t1",
+          "toolName": "get_sheets_metadata",
+          "args": {},
+          "delay": 100
+        },
+        {
+          "type": "tool_execution_end",
+          "toolCallId": "tc_t1",
+          "toolName": "get_sheets_metadata",
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "[\n  { \"name\": \"Sales\", \"rows\": 4, \"columns\": 6 },\n  { \"name\": \"Inventory\", \"rows\": 4, \"columns\": 4 },\n  { \"name\": \"Summary\", \"rows\": 0, \"columns\": 0 }\n]"
+              }
+            ]
+          },
+          "isError": false,
+          "delay": 300
+        },
+        { "type": "turn_start", "delay": 200 },
+        {
+          "type": "turn_end",
+          "delay": 100,
+          "message": {
+            "content": [
+              {
+                "type": "thinking",
+                "thinking": "Good, the Sales sheet has 4 rows and 6 columns. Let me read the full data to analyze product performance across all quarters."
+              },
+              {
+                "type": "toolCall",
+                "id": "tc_t2",
+                "name": "get_cell_ranges",
+                "arguments": { "sheetName": "Sales", "ranges": ["A1:F4"] }
+              }
+            ],
+            "stopReason": "toolUse",
+            "usage": { "input": 1300, "output": 70 }
+          }
+        },
+        {
+          "type": "tool_execution_start",
+          "toolCallId": "tc_t2",
+          "toolName": "get_cell_ranges",
+          "args": { "sheetName": "Sales", "ranges": ["A1:F4"] },
+          "delay": 100
+        },
+        {
+          "type": "tool_execution_end",
+          "toolCallId": "tc_t2",
+          "toolName": "get_cell_ranges",
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "{\n  \"success\": true,\n  \"worksheet\": {\n    \"name\": \"Sales\",\n    \"cells\": {\n      \"A1\": { \"value\": \"Product\" }, \"B1\": { \"value\": \"Q1 Sales\" }, \"C1\": { \"value\": \"Q2 Sales\" }, \"D1\": { \"value\": \"Q3 Sales\" }, \"E1\": { \"value\": \"Q4 Sales\" }, \"F1\": { \"value\": \"Total\" },\n      \"A2\": { \"value\": \"Widget A\" }, \"B2\": { \"value\": 12500 }, \"C2\": { \"value\": 14200 }, \"D2\": { \"value\": 11800 }, \"E2\": { \"value\": 16300 }, \"F2\": { \"formula\": \"=SUM(B2:E2)\", \"value\": 54800 },\n      \"A3\": { \"value\": \"Widget B\" }, \"B3\": { \"value\": 8900 }, \"C3\": { \"value\": 9200 }, \"D3\": { \"value\": 10100 }, \"E3\": { \"value\": 11500 }, \"F3\": { \"formula\": \"=SUM(B3:E3)\", \"value\": 39700 },\n      \"A4\": { \"value\": \"Widget C\" }, \"B4\": { \"value\": 5600 }, \"C4\": { \"value\": 6100 }, \"D4\": { \"value\": 7200 }, \"E4\": { \"value\": 8400 }, \"F4\": { \"formula\": \"=SUM(B4:E4)\", \"value\": 27300 }\n    }\n  }\n}"
+              }
+            ]
+          },
+          "isError": false,
+          "delay": 600
+        },
+        { "type": "turn_start", "delay": 200 },
+        {
+          "type": "turn_end",
+          "delay": 400,
+          "message": {
+            "content": [
+              {
+                "type": "thinking",
+                "thinking": "Let me analyze the data:\n\nWidget A: Q1=12500, Q2=14200, Q3=11800, Q4=16300, Total=54800\nWidget B: Q1=8900, Q2=9200, Q3=10100, Q4=11500, Total=39700\nWidget C: Q1=5600, Q2=6100, Q3=7200, Q4=8400, Total=27300\n\nWidget A clearly has the highest total at $54,800. It also has the highest individual quarter (Q4 at $16,300).\n\nBut looking at growth trends:\n- Widget A: Q1->Q4 growth = (16300-12500)/12500 = 30.4%\n- Widget B: Q1->Q4 growth = (11500-8900)/8900 = 29.2%\n- Widget C: Q1->Q4 growth = (8400-5600)/5600 = 50.0%\n\nWidget C has the highest growth rate even though its absolute numbers are lowest. That's worth noting.\n\nI should present both the absolute leader (Widget A) and the growth leader (Widget C) to give a complete picture."
+              },
+              {
+                "type": "text",
+                "text": "Based on the Sales data, here's the performance analysis:\n\n**Overall Leader: Widget A** with **$54,800** in total sales\n\n| Product | Total Sales | Q1-Q4 Growth |\n|---------|------------|-------------|\n| Widget A | $54,800 | +30.4% |\n| Widget B | $39,700 | +29.2% |\n| Widget C | $27,300 | **+50.0%** |\n\nKey insights:\n- **Widget A** dominates in absolute revenue, accounting for 45% of total sales\n- **Widget C** is the fastest growing product (+50% Q1 to Q4), despite having the lowest absolute numbers\n- All products show positive growth trends quarter-over-quarter\n\nWidget C's rapid growth makes it worth monitoring — it could overtake Widget B within the next few quarters."
+              }
+            ],
+            "stopReason": "stop",
+            "usage": { "input": 2200, "output": 280 }
+          }
+        }
+      ]
+    },
+    {
+      "userMessage": "Create a summary of inventory levels with a recommendation",
+      "events": [
+        { "type": "turn_start", "delay": 200 },
+        {
+          "type": "turn_end",
+          "delay": 100,
+          "message": {
+            "content": [
+              {
+                "type": "thinking",
+                "thinking": "I need to cross-reference sales data with inventory to give a meaningful recommendation. Let me read the inventory sheet. I already have the sales data from the previous turns. I should calculate the sell-through rate and recommend restocking for items with low inventory relative to their sales velocity."
+              },
+              {
+                "type": "toolCall",
+                "id": "tc_t3",
+                "name": "get_cell_ranges",
+                "arguments": { "sheetName": "Inventory", "ranges": ["A1:D4"] }
+              }
+            ],
+            "stopReason": "toolUse",
+            "usage": { "input": 2800, "output": 65 }
+          }
+        },
+        {
+          "type": "tool_execution_start",
+          "toolCallId": "tc_t3",
+          "toolName": "get_cell_ranges",
+          "args": { "sheetName": "Inventory", "ranges": ["A1:D4"] },
+          "delay": 100
+        },
+        {
+          "type": "tool_execution_end",
+          "toolCallId": "tc_t3",
+          "toolName": "get_cell_ranges",
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "{\n  \"cells\": {\n    \"A1\": { \"value\": \"Item\" }, \"B1\": { \"value\": \"SKU\" }, \"C1\": { \"value\": \"Quantity\" }, \"D1\": { \"value\": \"Location\" },\n    \"A2\": { \"value\": \"Widget A\" }, \"B2\": { \"value\": \"WA-001\" }, \"C2\": { \"value\": 342 }, \"D2\": { \"value\": \"Warehouse 1\" },\n    \"A3\": { \"value\": \"Widget B\" }, \"B3\": { \"value\": \"WB-002\" }, \"C3\": { \"value\": 128 }, \"D3\": { \"value\": \"Warehouse 2\" },\n    \"A4\": { \"value\": \"Widget C\" }, \"B4\": { \"value\": \"WC-003\" }, \"C4\": { \"value\": 56 }, \"D4\": { \"value\": \"Warehouse 1\" }\n  }\n}"
+              }
+            ]
+          },
+          "isError": false,
+          "delay": 400
+        },
+        { "type": "turn_start", "delay": 200 },
+        {
+          "type": "turn_end",
+          "delay": 500,
+          "message": {
+            "content": [
+              {
+                "type": "thinking",
+                "thinking": "Now let me cross-reference:\n\nWidget A: 342 units in stock, Q4 sales of 16,300 (highest quarter)\nWidget B: 128 units in stock, Q4 sales of 11,500\nWidget C: 56 units in stock, Q4 sales of 8,400 (fastest growing)\n\nThe sales numbers are in dollars, not units, so I can't directly calculate days of inventory. But I can note the relative positions:\n- Widget C has the lowest inventory (56 units) AND the fastest growth rate (50%). This is the most at-risk for stockouts.\n- Widget B has moderate inventory (128) with moderate growth.\n- Widget A has the most inventory (342) and the highest sales, but lower growth rate.\n\nI should recommend prioritizing Widget C restocking given its growth trajectory and low stock level."
+              },
+              {
+                "type": "text",
+                "text": "Here's the inventory-to-sales cross-reference:\n\n| Product | Current Stock | Q4 Sales | Growth Rate | Risk |\n|---------|--------------|----------|------------|------|\n| Widget A | 342 units | $16,300 | +30.4% | Low |\n| Widget B | 128 units | $11,500 | +29.2% | Medium |\n| Widget C | **56 units** | $8,400 | **+50.0%** | **High** |\n\n**Recommendation:**\n\n1. **Urgent: Restock Widget C** — Only 56 units remain with a 50% quarterly growth rate. At this trajectory, demand will outpace supply within the next quarter.\n\n2. **Monitor Widget B** — 128 units with steady ~29% growth. Schedule a reorder within 4-6 weeks.\n\n3. **Widget A is healthy** — 342 units provides adequate buffer despite highest absolute sales volume.\n\nWould you like me to write this summary to the Summary sheet?"
+              }
+            ],
+            "stopReason": "stop",
+            "usage": { "input": 3200, "output": 320 }
+          }
+        }
+      ]
+    }
+  ]
+}

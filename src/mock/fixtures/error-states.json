@@ -1,0 +1,231 @@
+{
+  "name": "Error States",
+  "description": "Edge cases: truncation, errors, empty content, long output, image results",
+  "autoPlay": true,
+  "streamDelay": 1000,
+  "turns": [
+    {
+      "userMessage": "Write a very detailed analysis of the entire workbook",
+      "events": [
+        { "type": "turn_start", "delay": 200 },
+        {
+          "type": "turn_end",
+          "delay": 500,
+          "message": {
+            "content": [
+              {
+                "type": "text",
+                "text": "# Comprehensive Workbook Analysis\n\n## Sales Sheet\n\nThe Sales sheet contains quarterly revenue data for three products across four quarters. Widget A leads with $54,800 in total revenue, followed by Widget B at $39,700 and Widget C at $27,300.\n\n## Growth Trends\n\nAll products show positive growth trajectories with Widget C showing the strongest momentum at 50% year-over-year growth. This suggests a market shift toward..."
+              }
+            ],
+            "stopReason": "length",
+            "usage": { "input": 1500, "output": 4096 }
+          }
+        }
+      ]
+    },
+    {
+      "userMessage": "Try running some complex Office.js code",
+      "events": [
+        { "type": "turn_start", "delay": 200 },
+        {
+          "type": "turn_end",
+          "delay": 100,
+          "message": {
+            "content": [
+              {
+                "type": "toolCall",
+                "id": "tc_e1",
+                "name": "execute_office_js",
+                "arguments": {
+                  "code": "const sheet = context.workbook.worksheets.getItem('NonExistent');\nsheet.load('name');\nawait context.sync();"
+                }
+              }
+            ],
+            "stopReason": "toolUse",
+            "usage": { "input": 1800, "output": 55 }
+          }
+        },
+        {
+          "type": "tool_execution_start",
+          "toolCallId": "tc_e1",
+          "toolName": "execute_office_js",
+          "args": {},
+          "delay": 100
+        },
+        {
+          "type": "tool_execution_end",
+          "toolCallId": "tc_e1",
+          "toolName": "execute_office_js",
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "Error: ItemNotFound - The requested resource doesn't exist.\n\nStack:\nError: ItemNotFound\n    at Excel.Worksheet._processResult\n    at Excel.RequestContext.processRequestExecutorResponseMessage"
+              }
+            ]
+          },
+          "isError": true,
+          "delay": 400
+        },
+        { "type": "turn_start", "delay": 200 },
+        {
+          "type": "turn_end",
+          "delay": 300,
+          "message": {
+            "content": [
+              {
+                "type": "text",
+                "text": ""
+              }
+            ],
+            "stopReason": "error",
+            "errorMessage": "The model encountered an internal error while processing the tool result. Please try again.",
+            "usage": { "input": 2200, "output": 0 }
+          }
+        }
+      ]
+    },
+    {
+      "userMessage": "Read all the data from the Inventory sheet",
+      "events": [
+        { "type": "turn_start", "delay": 200 },
+        {
+          "type": "turn_end",
+          "delay": 100,
+          "message": {
+            "content": [
+              {
+                "type": "toolCall",
+                "id": "tc_e2",
+                "name": "get_cell_ranges",
+                "arguments": { "sheetName": "Inventory", "ranges": ["A1:D100"] }
+              }
+            ],
+            "stopReason": "toolUse",
+            "usage": { "input": 1200, "output": 50 }
+          }
+        },
+        {
+          "type": "tool_execution_start",
+          "toolCallId": "tc_e2",
+          "toolName": "get_cell_ranges",
+          "args": { "sheetName": "Inventory", "ranges": ["A1:D100"] },
+          "delay": 100
+        },
+        {
+          "type": "tool_execution_end",
+          "toolCallId": "tc_e2",
+          "toolName": "get_cell_ranges",
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "{\n  \"success\": true,\n  \"worksheet\": {\n    \"name\": \"Inventory\",\n    \"dimension\": { \"rows\": 100, \"columns\": 4 },\n    \"cells\": {\n      \"A1\": { \"value\": \"Item\" }, \"B1\": { \"value\": \"SKU\" }, \"C1\": { \"value\": \"Quantity\" }, \"D1\": { \"value\": \"Location\" },\n      \"A2\": { \"value\": \"Widget A\" }, \"B2\": { \"value\": \"WA-001\" }, \"C2\": { \"value\": 342 }, \"D2\": { \"value\": \"Warehouse 1\" },\n      \"A3\": { \"value\": \"Widget B\" }, \"B3\": { \"value\": \"WB-002\" }, \"C3\": { \"value\": 128 }, \"D3\": { \"value\": \"Warehouse 2\" },\n      \"A4\": { \"value\": \"Widget C\" }, \"B4\": { \"value\": \"WC-003\" }, \"C4\": { \"value\": 56 }, \"D4\": { \"value\": \"Warehouse 1\" },\n      \"A5\": { \"value\": \"Gadget X\" }, \"B5\": { \"value\": \"GX-004\" }, \"C5\": { \"value\": 891 }, \"D5\": { \"value\": \"Warehouse 3\" },\n      \"A6\": { \"value\": \"Gadget Y\" }, \"B6\": { \"value\": \"GY-005\" }, \"C6\": { \"value\": 234 }, \"D6\": { \"value\": \"Warehouse 1\" },\n      \"A7\": { \"value\": \"Gadget Z\" }, \"B7\": { \"value\": \"GZ-006\" }, \"C7\": { \"value\": 67 }, \"D7\": { \"value\": \"Warehouse 2\" },\n      \"A8\": { \"value\": \"Doohickey Alpha\" }, \"B8\": { \"value\": \"DA-007\" }, \"C8\": { \"value\": 1205 }, \"D8\": { \"value\": \"Warehouse 1\" },\n      \"A9\": { \"value\": \"Doohickey Beta\" }, \"B9\": { \"value\": \"DB-008\" }, \"C9\": { \"value\": 543 }, \"D9\": { \"value\": \"Warehouse 3\" },\n      \"A10\": { \"value\": \"Thingamajig Pro\" }, \"B10\": { \"value\": \"TP-009\" }, \"C10\": { \"value\": 12 }, \"D10\": { \"value\": \"Warehouse 2\" },\n      \"A11\": { \"value\": \"Thingamajig Lite\" }, \"B11\": { \"value\": \"TL-010\" }, \"C11\": { \"value\": 3 }, \"D11\": { \"value\": \"Warehouse 1\" },\n      \"A12\": { \"value\": \"Contraption M1\" }, \"B12\": { \"value\": \"CM-011\" }, \"C12\": { \"value\": 445 }, \"D12\": { \"value\": \"Warehouse 3\" },\n      \"A13\": { \"value\": \"Contraption M2\" }, \"B13\": { \"value\": \"CM-012\" }, \"C13\": { \"value\": 290 }, \"D13\": { \"value\": \"Warehouse 2\" },\n      \"A14\": { \"value\": \"Apparatus 1\" }, \"B14\": { \"value\": \"AP-013\" }, \"C14\": { \"value\": 178 }, \"D14\": { \"value\": \"Warehouse 1\" },\n      \"A15\": { \"value\": \"Apparatus 2\" }, \"B15\": { \"value\": \"AP-014\" }, \"C15\": { \"value\": 99 }, \"D15\": { \"value\": \"Warehouse 3\" },\n      \"A16\": { \"value\": \"Apparatus 3\" }, \"B16\": { \"value\": \"AP-015\" }, \"C16\": { \"value\": 56 }, \"D16\": { \"value\": \"Warehouse 2\" },\n      \"A17\": { \"value\": \"Mechanism Standard\" }, \"B17\": { \"value\": \"MS-016\" }, \"C17\": { \"value\": 812 }, \"D17\": { \"value\": \"Warehouse 1\" },\n      \"A18\": { \"value\": \"Mechanism Deluxe\" }, \"B18\": { \"value\": \"MD-017\" }, \"C18\": { \"value\": 334 }, \"D18\": { \"value\": \"Warehouse 3\" },\n      \"A19\": { \"value\": \"Part 9001\" }, \"B19\": { \"value\": \"PT-018\" }, \"C19\": { \"value\": 10000 }, \"D19\": { \"value\": \"Warehouse 1\" },\n      \"A20\": { \"value\": \"Part 9002\" }, \"B20\": { \"value\": \"PT-019\" }, \"C20\": { \"value\": 8500 }, \"D20\": { \"value\": \"Warehouse 2\" }\n    }\n  }\n}"
+              }
+            ]
+          },
+          "isError": false,
+          "delay": 800
+        },
+        { "type": "turn_start", "delay": 200 },
+        {
+          "type": "turn_end",
+          "delay": 400,
+          "message": {
+            "content": [
+              {
+                "type": "text",
+                "text": "The Inventory sheet contains **19 items** across 3 warehouses. Here's the summary:\n\n| Warehouse | Items | Total Qty |\n|-----------|-------|-----------|\n| Warehouse 1 | 8 | 13,651 |\n| Warehouse 2 | 6 | 9,174 |\n| Warehouse 3 | 5 | 2,513 |\n\nLow stock alerts (< 100 units):\n- Thingamajig Lite: **3 units** (critical)\n- Thingamajig Pro: **12 units** (low)\n- Widget C: **56 units** (low)\n- Apparatus 3: **56 units** (low)\n- Gadget Z: **67 units** (low)\n- Apparatus 2: **99 units** (low)"
+              }
+            ],
+            "stopReason": "stop",
+            "usage": { "input": 3500, "output": 200 }
+          }
+        }
+      ]
+    },
+    {
+      "userMessage": "Take a screenshot of the Sales data range",
+      "events": [
+        { "type": "turn_start", "delay": 200 },
+        {
+          "type": "turn_end",
+          "delay": 100,
+          "message": {
+            "content": [
+              {
+                "type": "toolCall",
+                "id": "tc_e3",
+                "name": "get_range_image",
+                "arguments": { "sheetName": "Sales", "range": "A1:F4" }
+              }
+            ],
+            "stopReason": "toolUse",
+            "usage": { "input": 1400, "output": 45 }
+          }
+        },
+        {
+          "type": "tool_execution_start",
+          "toolCallId": "tc_e3",
+          "toolName": "get_range_image",
+          "args": { "sheetName": "Sales", "range": "A1:F4" },
+          "delay": 100
+        },
+        {
+          "type": "tool_execution_end",
+          "toolCallId": "tc_e3",
+          "toolName": "get_range_image",
+          "result": {
+            "content": [
+              { "type": "text", "text": "Image captured for A1:F4 on sheet \"Sales\"." },
+              {
+                "type": "image",
+                "data": "iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAFklEQVQYV2P8z8BQz0BFwMgwasCoAgBMNAYRjjW2YQAAAABJRU5ErkJggg==",
+                "mimeType": "image/png"
+              }
+            ]
+          },
+          "isError": false,
+          "delay": 600
+        },
+        { "type": "turn_start", "delay": 200 },
+        {
+          "type": "turn_end",
+          "delay": 300,
+          "message": {
+            "content": [
+              {
+                "type": "text",
+                "text": "Here's the screenshot of the Sales data range (A1:F4). The image shows the product names, quarterly sales figures, and totals.\n\nNote: In the mock environment, this is a placeholder image. In the actual Excel environment, you would see the formatted spreadsheet data."
+              }
+            ],
+            "stopReason": "stop",
+            "usage": { "input": 2000, "output": 55 }
+          }
+        }
+      ]
+    },
+    {
+      "userMessage": "Do something that will fail completely",
+      "events": [
+        { "type": "turn_start", "delay": 200 },
+        {
+          "type": "turn_end",
+          "delay": 300,
+          "message": {
+            "content": [
+              {
+                "type": "text",
+                "text": ""
+              }
+            ],
+            "stopReason": "error",
+            "errorMessage": "Connection reset: The upstream provider returned HTTP 502. This is usually a transient error. Please retry your request.",
+            "usage": { "input": 500, "output": 0 }
+          }
+        }
+      ]
+    }
+  ]
+}

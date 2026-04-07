@@ -1,0 +1,158 @@
+{
+  "name": "Streaming Slow",
+  "description": "Slow streaming simulation for testing scroll and animation behaviors",
+  "autoPlay": true,
+  "streamDelay": 2000,
+  "turns": [
+    {
+      "userMessage": "Give me a detailed quarterly sales report",
+      "events": [
+        { "type": "turn_start", "delay": 500 },
+        {
+          "type": "turn_end",
+          "delay": 100,
+          "message": {
+            "content": [
+              {
+                "type": "toolCall",
+                "id": "tc_s1",
+                "name": "get_cell_ranges",
+                "arguments": { "sheetName": "Sales", "ranges": ["A1:F4"] }
+              }
+            ],
+            "stopReason": "toolUse",
+            "usage": { "input": 1000, "output": 50 }
+          }
+        },
+        {
+          "type": "tool_execution_start",
+          "toolCallId": "tc_s1",
+          "toolName": "get_cell_ranges",
+          "args": { "sheetName": "Sales", "ranges": ["A1:F4"] },
+          "delay": 200
+        },
+        {
+          "type": "tool_execution_end",
+          "toolCallId": "tc_s1",
+          "toolName": "get_cell_ranges",
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "{ \"success\": true, \"worksheet\": { \"name\": \"Sales\", \"cells\": { \"A1\": {\"value\":\"Product\"}, \"B1\": {\"value\":\"Q1\"}, \"C1\": {\"value\":\"Q2\"}, \"D1\": {\"value\":\"Q3\"}, \"E1\": {\"value\":\"Q4\"}, \"F1\": {\"value\":\"Total\"}, \"A2\": {\"value\":\"Widget A\"}, \"B2\": {\"value\":12500}, \"C2\": {\"value\":14200}, \"D2\": {\"value\":11800}, \"E2\": {\"value\":16300}, \"F2\": {\"value\":54800}, \"A3\": {\"value\":\"Widget B\"}, \"B3\": {\"value\":8900}, \"C3\": {\"value\":9200}, \"D3\": {\"value\":10100}, \"E3\": {\"value\":11500}, \"F3\": {\"value\":39700}, \"A4\": {\"value\":\"Widget C\"}, \"B4\": {\"value\":5600}, \"C4\": {\"value\":6100}, \"D4\": {\"value\":7200}, \"E4\": {\"value\":8400}, \"F4\": {\"value\":27300} } } }"
+              }
+            ]
+          },
+          "isError": false,
+          "delay": 1500
+        },
+        { "type": "turn_start", "delay": 500 },
+        {
+          "type": "turn_end",
+          "delay": 1000,
+          "message": {
+            "content": [
+              {
+                "type": "text",
+                "text": "# Quarterly Sales Report\n\n## Overview\n\nTotal revenue across all products for the fiscal year: **$121,800**\n\nThe product portfolio shows healthy growth across all three product lines, with Widget A maintaining its position as the flagship product.\n\n## Performance by Product\n\n### Widget A (Revenue Leader)\n\n| Quarter | Revenue | QoQ Change |\n|---------|---------|------------|\n| Q1 | $12,500 | - |\n| Q2 | $14,200 | +13.6% |\n| Q3 | $11,800 | -16.9% |\n| Q4 | $16,300 | +38.1% |\n| **Total** | **$54,800** | |\n\nWidget A accounts for **45.0%** of total revenue. Strong Q4 rebound after Q3 dip.\n\n### Widget B (Steady Performer)\n\n| Quarter | Revenue | QoQ Change |\n|---------|---------|------------|\n| Q1 | $8,900 | - |\n| Q2 | $9,200 | +3.4% |\n| Q3 | $10,100 | +9.8% |\n| Q4 | $11,500 | +13.9% |\n| **Total** | **$39,700** | |\n\nWidget B shows the most **consistent growth** — no negative quarters. Accounts for **32.6%** of revenue.\n\n### Widget C (Growth Star)\n\n| Quarter | Revenue | QoQ Change |\n|---------|---------|------------|\n| Q1 | $5,600 | - |\n| Q2 | $6,100 | +8.9% |\n| Q3 | $7,200 | +18.0% |\n| Q4 | $8,400 | +16.7% |\n| **Total** | **$27,300** | |\n\nWidget C is the **fastest-growing product** with 50% year-over-year growth (Q1 vs Q4). Accounts for **22.4%** of revenue.\n\n## Quarterly Totals\n\n| Quarter | Total Revenue | QoQ Change |\n|---------|--------------|------------|\n| Q1 | $27,000 | - |\n| Q2 | $29,500 | +9.3% |\n| Q3 | $29,100 | -1.4% |\n| Q4 | $36,200 | +24.4% |\n\n## Key Takeaways\n\n1. **Q4 was the strongest quarter** at $36,200 (+24.4% QoQ)\n2. **Q3 showed a slight dip** driven by Widget A's seasonal decline\n3. **Widget C's trajectory** suggests it could surpass Widget B by mid-next-year\n4. **Portfolio diversification** is improving — Widget A's share dropped from 46.3% (Q1) to 45.0% (full year) as other products grow faster"
+              }
+            ],
+            "stopReason": "stop",
+            "usage": { "input": 2500, "output": 850 }
+          }
+        }
+      ]
+    },
+    {
+      "userMessage": "Now format that report and write it to the Summary sheet",
+      "events": [
+        { "type": "turn_start", "delay": 800 },
+        {
+          "type": "turn_end",
+          "delay": 100,
+          "message": {
+            "content": [
+              {
+                "type": "toolCall",
+                "id": "tc_s2",
+                "name": "set_cell_range",
+                "arguments": {
+                  "sheetName": "Summary",
+                  "cells": {
+                    "A1": { "value": "Quarterly Sales Report" },
+                    "A3": { "value": "Product" },
+                    "B3": { "value": "Q1" },
+                    "C3": { "value": "Q2" },
+                    "D3": { "value": "Q3" },
+                    "E3": { "value": "Q4" },
+                    "F3": { "value": "Total" },
+                    "G3": { "value": "Growth" }
+                  }
+                }
+              },
+              {
+                "type": "toolCall",
+                "id": "tc_s3",
+                "name": "execute_office_js",
+                "arguments": {
+                  "code": "const sheet = context.workbook.worksheets.getItem('Summary');\nconst title = sheet.getRange('A1:G1');\ntitle.merge();\ntitle.format.font.size = 14;\ntitle.format.font.bold = true;\nconst header = sheet.getRange('A3:G3');\nheader.format.fill.color = '#4472C4';\nheader.format.font.color = '#FFFFFF';\nheader.format.font.bold = true;\nawait context.sync();"
+                }
+              }
+            ],
+            "stopReason": "toolUse",
+            "usage": { "input": 3500, "output": 180 }
+          }
+        },
+        {
+          "type": "tool_execution_start",
+          "toolCallId": "tc_s2",
+          "toolName": "set_cell_range",
+          "args": {},
+          "delay": 200
+        },
+        {
+          "type": "tool_execution_end",
+          "toolCallId": "tc_s2",
+          "toolName": "set_cell_range",
+          "result": {
+            "content": [{ "type": "text", "text": "{ \"success\": true }" }]
+          },
+          "isError": false,
+          "delay": 800
+        },
+        {
+          "type": "tool_execution_start",
+          "toolCallId": "tc_s3",
+          "toolName": "execute_office_js",
+          "args": {},
+          "delay": 100
+        },
+        {
+          "type": "tool_execution_end",
+          "toolCallId": "tc_s3",
+          "toolName": "execute_office_js",
+          "result": {
+            "content": [{ "type": "text", "text": "{ \"success\": true }" }]
+          },
+          "isError": false,
+          "delay": 1200
+        },
+        { "type": "turn_start", "delay": 500 },
+        {
+          "type": "turn_end",
+          "delay": 800,
+          "message": {
+            "content": [
+              {
+                "type": "text",
+                "text": "I've written the report to the **Summary** sheet with formatting:\n\n- Title row merged and styled at 14pt bold\n- Header row with blue background and white text\n- Data rows with values and growth percentages\n\nThe report is ready for review."
+              }
+            ],
+            "stopReason": "stop",
+            "usage": { "input": 4000, "output": 75 }
+          }
+        }
+      ]
+    }
+  ]
+}

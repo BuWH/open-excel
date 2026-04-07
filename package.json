@@ -7,6 +7,8 @@
     "certs:install": "office-addin-dev-certs install",
     "certs:verify": "office-addin-dev-certs verify",
     "dev": "vite",
+    "dev:mock": "vite --config vite.config.mock.ts",
+    "dev:stop": "lsof -ti :5173 | xargs kill -9 2>/dev/null || echo 'No dev server running on port 5173'",
     "build": "tsc -b && vite build",
     "manifest:validate": "office-addin-manifest validate manifest.xml",
     "lint": "biome check .",
@@ -18,15 +20,18 @@
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
     "e2e": "playwright test",
     "e2e:headed": "playwright test --headed",
+    "e2e:mock": "playwright test --config playwright.config.mock.ts",
+    "e2e:mock:headed": "playwright test --config playwright.config.mock.ts --headed",
     "e2e:step": "node e2e/step.cjs"
   },
   "dependencies": {
-    "@assistant-ui/react": "^0.12.23",
     "@mariozechner/pi-agent-core": "^0.65.2",
     "@mariozechner/pi-ai": "^0.65.2",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
+    "react-markdown": "^10.1.0",
     "react-router-dom": "^7.9.6",
+    "remark-gfm": "^4.0.1",
     "zustand": "^5.0.8"
   },
   "devDependencies": {

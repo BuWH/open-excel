@@ -1,0 +1,68 @@
+{
+  "name": "Basic Chat",
+  "description": "Simple text-only Q&A conversation with markdown rendering",
+  "autoPlay": true,
+  "streamDelay": 600,
+  "turns": [
+    {
+      "userMessage": "What can you help me with?",
+      "events": [
+        { "type": "turn_start", "delay": 200 },
+        {
+          "type": "turn_end",
+          "delay": 300,
+          "message": {
+            "content": [
+              {
+                "type": "text",
+                "text": "I can help you with a variety of Excel tasks:\n\n- **Reading data** from your worksheets\n- **Writing values** and formulas to cells\n- **Formatting** headers, borders, and cell styles\n- **Creating charts** and visual summaries\n- **Analyzing data** with formulas and pivot-like summaries\n\nJust tell me what you'd like to do with your workbook!"
+              }
+            ],
+            "stopReason": "stop",
+            "usage": { "input": 850, "output": 120 }
+          }
+        }
+      ]
+    },
+    {
+      "userMessage": "Can you show me a code example of a SUM formula?",
+      "events": [
+        { "type": "turn_start", "delay": 150 },
+        {
+          "type": "turn_end",
+          "delay": 400,
+          "message": {
+            "content": [
+              {
+                "type": "text",
+                "text": "Here's how SUM formulas work in Excel:\n\n```\n=SUM(B2:B10)\n```\n\nYou can also sum across multiple ranges:\n\n```\n=SUM(B2:B10, D2:D10)\n```\n\nOr use conditional summing with `SUMIF`:\n\n| Formula | Description |\n|---------|-------------|\n| `=SUM(A1:A10)` | Sum a simple range |\n| `=SUMIF(A:A, \"Widget\", B:B)` | Sum where column A matches |\n| `=SUMPRODUCT(A1:A5, B1:B5)` | Multiply and sum pairs |\n\nWould you like me to add a SUM formula to your workbook?"
+              }
+            ],
+            "stopReason": "stop",
+            "usage": { "input": 1200, "output": 210 }
+          }
+        }
+      ]
+    },
+    {
+      "userMessage": "Yes, add a total row to the Sales sheet",
+      "events": [
+        { "type": "turn_start", "delay": 100 },
+        {
+          "type": "turn_end",
+          "delay": 500,
+          "message": {
+            "content": [
+              {
+                "type": "text",
+                "text": "I've added a **Total** row at row 5 of the Sales sheet with SUM formulas for each quarter column. The totals are:\n\n- Q1: **27,000**\n- Q2: **29,500**\n- Q3: **29,100**\n- Q4: **36,200**\n- Grand Total: **121,800**\n\nAll values are calculated with `=SUM()` formulas so they'll update automatically."
+              }
+            ],
+            "stopReason": "stop",
+            "usage": { "input": 1500, "output": 95 }
+          }
+        }
+      ]
+    }
+  ]
+}
