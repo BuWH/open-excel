@@ -35,7 +35,7 @@ export type ChatMessage = {
   readonly role: "user" | "assistant";
   readonly parts: readonly ChatMessagePart[];
   readonly timestamp: number;
-  readonly status?: "complete" | "streaming" | "error";
+  readonly status?: "complete" | "streaming" | "error" | "truncated";
   readonly errorMessage?: string;
   readonly usage?: { input: number; output: number };
 };
@@ -125,7 +125,11 @@ export function convertMessages(messages: AgentMessage[]): ChatMessage[] {
     if (isAssistantMessage(m)) {
       const parts = convertAssistantContent(m, resultMap);
       const status =
-        m.stopReason === "error" ? ("error" as const) : ("complete" as const);
+        m.stopReason === "error"
+          ? ("error" as const)
+          : m.stopReason === "length"
+            ? ("truncated" as const)
+            : ("complete" as const);
 
       // Log assistant messages with empty content for debugging
       if (parts.length === 0) {

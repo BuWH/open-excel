@@ -58,6 +58,9 @@ export function MessageBubble({ message, isLast, isRunning }: MessageBubbleProps
               return null;
           }
         })}
+        {message.status === "truncated" && (
+          <p className="msg-truncated">Response was cut short due to output token limit.</p>
+        )}
         {message.status === "error" && message.errorMessage && (
           <p className="msg-error">{message.errorMessage}</p>
         )}

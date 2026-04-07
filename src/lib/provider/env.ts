@@ -22,8 +22,8 @@ export const ENV_MODEL: Model<"openai-completions"> = {
   reasoning: false,
   input: ["text", "image"],
   cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-  contextWindow: 128000,
-  maxTokens: 16384,
+  contextWindow: 192000,
+  maxTokens: 48000,
 };
 
 export const ENV_API_KEY = envApiKey;

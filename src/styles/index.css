@@ -571,6 +571,16 @@ select {
   border: 1px solid #fecaca;
 }
 
+.msg-truncated {
+  margin: 0;
+  padding: 0.4rem 0.65rem;
+  border-radius: 6px;
+  background: #fffbeb;
+  color: #b45309;
+  font-size: 0.82rem;
+  border: 1px solid #fde68a;
+}
+
 /* ------------------------------------------------------------------ */
 /* Tool call card                                                     */
 /* ------------------------------------------------------------------ */
