@@ -1,0 +1,270 @@
+{
+  "name": "Tool Calls",
+  "description": "Tool calls with mixed success/error results and tool grouping",
+  "autoPlay": true,
+  "streamDelay": 800,
+  "turns": [
+    {
+      "userMessage": "Show me all sheets in the workbook",
+      "events": [
+        { "type": "turn_start", "delay": 200 },
+        {
+          "type": "turn_end",
+          "delay": 100,
+          "message": {
+            "content": [
+              { "type": "toolCall", "id": "tc_1", "name": "get_sheets_metadata", "arguments": {} }
+            ],
+            "stopReason": "toolUse",
+            "usage": { "input": 900, "output": 45 }
+          }
+        },
+        {
+          "type": "tool_execution_start",
+          "toolCallId": "tc_1",
+          "toolName": "get_sheets_metadata",
+          "args": {},
+          "delay": 100
+        },
+        {
+          "type": "tool_execution_end",
+          "toolCallId": "tc_1",
+          "toolName": "get_sheets_metadata",
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "[\n  { \"id\": \"Sales\", \"name\": \"Sales\", \"rows\": 4, \"columns\": 6 },\n  { \"id\": \"Inventory\", \"name\": \"Inventory\", \"rows\": 4, \"columns\": 4 },\n  { \"id\": \"Summary\", \"name\": \"Summary\", \"rows\": 0, \"columns\": 0 }\n]"
+              }
+            ]
+          },
+          "isError": false,
+          "delay": 400
+        },
+        { "type": "turn_start", "delay": 200 },
+        {
+          "type": "turn_end",
+          "delay": 300,
+          "message": {
+            "content": [
+              {
+                "type": "text",
+                "text": "Your workbook has **3 sheets**:\n\n1. **Sales** - 4 rows x 6 columns of data\n2. **Inventory** - 4 rows x 4 columns of data\n3. **Summary** - Empty sheet\n\nWhat would you like to do?"
+              }
+            ],
+            "stopReason": "stop",
+            "usage": { "input": 1100, "output": 80 }
+          }
+        }
+      ]
+    },
+    {
+      "userMessage": "Read cells A1:C3 from the Sales sheet",
+      "events": [
+        { "type": "turn_start", "delay": 150 },
+        {
+          "type": "turn_end",
+          "delay": 100,
+          "message": {
+            "content": [
+              {
+                "type": "toolCall",
+                "id": "tc_2",
+                "name": "get_cell_ranges",
+                "arguments": { "sheetName": "Sales", "ranges": ["A1:C3"] }
+              }
+            ],
+            "stopReason": "toolUse",
+            "usage": { "input": 1200, "output": 55 }
+          }
+        },
+        {
+          "type": "tool_execution_start",
+          "toolCallId": "tc_2",
+          "toolName": "get_cell_ranges",
+          "args": { "sheetName": "Sales", "ranges": ["A1:C3"] },
+          "delay": 100
+        },
+        {
+          "type": "tool_execution_end",
+          "toolCallId": "tc_2",
+          "toolName": "get_cell_ranges",
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "{\n  \"success\": true,\n  \"worksheet\": {\n    \"name\": \"Sales\",\n    \"dimension\": { \"rows\": 4, \"columns\": 6 },\n    \"cells\": {\n      \"A1\": { \"value\": \"Product\" },\n      \"B1\": { \"value\": \"Q1 Sales\" },\n      \"C1\": { \"value\": \"Q2 Sales\" },\n      \"A2\": { \"value\": \"Widget A\" },\n      \"B2\": { \"value\": 12500 },\n      \"C2\": { \"value\": 14200 },\n      \"A3\": { \"value\": \"Widget B\" },\n      \"B3\": { \"value\": 8900 },\n      \"C3\": { \"value\": 9200 }\n    }\n  }\n}"
+              }
+            ]
+          },
+          "isError": false,
+          "delay": 500
+        },
+        { "type": "turn_start", "delay": 200 },
+        {
+          "type": "turn_end",
+          "delay": 300,
+          "message": {
+            "content": [
+              {
+                "type": "text",
+                "text": "Here's the data from **Sales A1:C3**:\n\n| Product | Q1 Sales | Q2 Sales |\n|---------|----------|----------|\n| Widget A | 12,500 | 14,200 |\n| Widget B | 8,900 | 9,200 |\n\nWidget A is outperforming Widget B in both quarters."
+              }
+            ],
+            "stopReason": "stop",
+            "usage": { "input": 1600, "output": 110 }
+          }
+        }
+      ]
+    },
+    {
+      "userMessage": "Format the header row with bold and blue background",
+      "events": [
+        { "type": "turn_start", "delay": 150 },
+        {
+          "type": "turn_end",
+          "delay": 100,
+          "message": {
+            "content": [
+              {
+                "type": "toolCall",
+                "id": "tc_3",
+                "name": "execute_office_js",
+                "arguments": {
+                  "code": "const sheet = context.workbook.worksheets.getItem('Sales');\nconst header = sheet.getRange('A1:F1');\nheader.format.font.bold = true;\nheader.format.fill.color = '#4472C4';\nheader.format.font.color = '#FFFFFF';\nawait context.sync();\nreturn { success: true };"
+                }
+              }
+            ],
+            "stopReason": "toolUse",
+            "usage": { "input": 1400, "output": 90 }
+          }
+        },
+        {
+          "type": "tool_execution_start",
+          "toolCallId": "tc_3",
+          "toolName": "execute_office_js",
+          "args": { "code": "..." },
+          "delay": 100
+        },
+        {
+          "type": "tool_execution_end",
+          "toolCallId": "tc_3",
+          "toolName": "execute_office_js",
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "Error: RichApi.Error - The operation failed because the requested range overlaps with a table.\n\nStack:\nError: RichApi.Error\n    at processErrors (office.js:1234)\n    at Excel.RequestContext._processResult (office.js:5678)"
+              }
+            ]
+          },
+          "isError": true,
+          "delay": 600
+        },
+        { "type": "turn_start", "delay": 200 },
+        {
+          "type": "turn_end",
+          "delay": 300,
+          "message": {
+            "content": [
+              {
+                "type": "text",
+                "text": "The formatting failed because the range overlaps with an existing Excel table. Let me try a different approach by modifying the table style instead."
+              }
+            ],
+            "stopReason": "stop",
+            "errorMessage": "Tool execution failed",
+            "usage": { "input": 1800, "output": 45 }
+          }
+        }
+      ]
+    },
+    {
+      "userMessage": "Write some totals and clear the summary sheet",
+      "events": [
+        { "type": "turn_start", "delay": 150 },
+        {
+          "type": "turn_end",
+          "delay": 100,
+          "message": {
+            "content": [
+              {
+                "type": "toolCall",
+                "id": "tc_4",
+                "name": "set_cell_range",
+                "arguments": {
+                  "sheetName": "Sales",
+                  "cells": {
+                    "A5": { "value": "Total" },
+                    "B5": { "formula": "=SUM(B2:B4)" },
+                    "C5": { "formula": "=SUM(C2:C4)" }
+                  }
+                }
+              },
+              {
+                "type": "toolCall",
+                "id": "tc_5",
+                "name": "clear_cell_range",
+                "arguments": {
+                  "sheetName": "Summary",
+                  "range": "A1:Z100"
+                }
+              }
+            ],
+            "stopReason": "toolUse",
+            "usage": { "input": 1500, "output": 120 }
+          }
+        },
+        {
+          "type": "tool_execution_start",
+          "toolCallId": "tc_4",
+          "toolName": "set_cell_range",
+          "args": {},
+          "delay": 50
+        },
+        {
+          "type": "tool_execution_end",
+          "toolCallId": "tc_4",
+          "toolName": "set_cell_range",
+          "result": {
+            "content": [{ "type": "text", "text": "{ \"success\": true }" }]
+          },
+          "isError": false,
+          "delay": 200
+        },
+        {
+          "type": "tool_execution_start",
+          "toolCallId": "tc_5",
+          "toolName": "clear_cell_range",
+          "args": {},
+          "delay": 50
+        },
+        {
+          "type": "tool_execution_end",
+          "toolCallId": "tc_5",
+          "toolName": "clear_cell_range",
+          "result": {
+            "content": [{ "type": "text", "text": "{ \"success\": true }" }]
+          },
+          "isError": false,
+          "delay": 200
+        },
+        { "type": "turn_start", "delay": 200 },
+        {
+          "type": "turn_end",
+          "delay": 300,
+          "message": {
+            "content": [
+              {
+                "type": "text",
+                "text": "Done! I've:\n\n1. Added a **Total** row at A5 with SUM formulas for Q1 and Q2\n2. Cleared the Summary sheet completely\n\nThe totals will auto-update when you change the source data."
+              }
+            ],
+            "stopReason": "stop",
+            "usage": { "input": 1900, "output": 65 }
+          }
+        }
+      ]
+    }
+  ]
+}
