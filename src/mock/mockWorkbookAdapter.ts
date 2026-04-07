@@ -203,7 +203,10 @@ export class MockWorkbookAdapter implements WorkbookAdapter {
     if (!sheet) return { success: true };
 
     const parts = input.range.split(":");
-    if (parts.length === 2) {
+    if (parts.length === 1) {
+      const addr = (parts[0] ?? "").toUpperCase();
+      delete sheet.cells[addr];
+    } else {
       const start = parseA1(parts[0] ?? "");
       const end = parseA1(parts[1] ?? "");
       if (start && end) {
