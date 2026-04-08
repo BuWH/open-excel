@@ -49,11 +49,26 @@ export type MockTurn = {
   events: MockEventDef[];
 };
 
+export type MockProviderState = {
+  provider: "custom" | "github-copilot";
+  customConfig?: {
+    baseUrl: string;
+    model: string;
+    apiKey: string;
+  };
+  copilotConnected?: boolean;
+  copilotModelId?: string;
+  activeTab?: "custom" | "github-copilot";
+};
+
 export type MockScenario = {
   name: string;
   description: string;
+  category?: "chat" | "settings";
   autoPlay?: boolean;
   streamDelay?: number;
+  openSettings?: boolean;
+  providerState?: MockProviderState;
   turns: MockTurn[];
 };
 

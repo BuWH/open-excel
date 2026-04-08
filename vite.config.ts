@@ -30,6 +30,24 @@ export default defineConfig(async ({ mode }) => {
           secure: false,
           target: upstream.origin,
         },
+        "/api/github-api": {
+          changeOrigin: true,
+          rewrite: (path: string) => path.replace(/^\/api\/github-api/, ""),
+          secure: false,
+          target: "https://api.github.com",
+        },
+        "/api/github-oauth": {
+          changeOrigin: true,
+          rewrite: (path: string) => path.replace(/^\/api\/github-oauth/, ""),
+          secure: false,
+          target: "https://github.com",
+        },
+        "/api/copilot-api": {
+          changeOrigin: true,
+          rewrite: (path: string) => path.replace(/^\/api\/copilot-api/, ""),
+          secure: false,
+          target: "https://api.individual.githubcopilot.com",
+        },
       },
     },
     preview: {

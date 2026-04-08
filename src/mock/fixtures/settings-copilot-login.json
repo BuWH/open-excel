@@ -1,0 +1,13 @@
+{
+  "name": "Settings: Copilot Not Logged In",
+  "description": "Shows the settings panel on the GitHub Copilot tab before login, with sign-in prompt visible",
+  "category": "settings",
+  "autoPlay": false,
+  "openSettings": true,
+  "providerState": {
+    "provider": "custom",
+    "copilotConnected": false,
+    "activeTab": "github-copilot"
+  },
+  "turns": []
+}

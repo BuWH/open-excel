@@ -11,21 +11,22 @@ open-excel is an open-source AI-powered Excel add-in. It runs as an Office.js ta
 - **Runtime**: Bun (not npm/yarn)
 - **Framework**: React 19 + Vite 8
 - **Language**: TypeScript 5.9 (strict mode)
+- **Agent**: `@mariozechner/pi-agent-core` + `@mariozechner/pi-ai` for LLM tool-calling loop
 - **State management**: Zustand
-- **Validation**: Zod
 - **Linting/Formatting**: Biome
 - **Excel integration**: Office.js
-- **AI backend**: LiteLLM (OpenAI-compatible `/chat/completions` API)
+- **AI backend**: LiteLLM (OpenAI-compatible API via Vite proxy)
 - **Routing**: React Router (MemoryRouter)
+- **E2E**: Playwright (chromium, headed, against Excel Online)
 
 ## Architecture
 
-The system is organized in 7 layers, top to bottom:
+The system is organized in layers, top to bottom:
 
-1. **React UI** -- `WorkbenchPage` hosts `ChatPanel` (conversation) and `WorkbookInspector` (workbook preview). Routes flow: login -> terms -> onboarding -> workbench.
-2. **Agent Loop** (`runAgentTurn`) -- Iterates up to 8 tool-calling rounds per user turn. Sends transcript to LiteLLM, dispatches tool calls, appends results, and repeats until the model returns a final text answer or the iteration limit is reached.
-3. **Tool Registry** (`buildToolRegistry`) -- 6 tools with Zod input validation. Returns OpenAI-format tool definitions and executor functions keyed by tool name.
-4. **LiteLLM HTTP Client** (`createChatCompletion`) -- Sends OpenAI-compatible requests to the configured endpoint. Normalizes response content (string or content-part arrays) and extracts tool calls across all choices.
+1. **React UI** -- Custom chat components (no assistant-ui dependency). `WorkbenchPage` hosts `ChatThread` (conversation) and `WorkbookInspector` (workbook preview). Routes flow: login -> terms -> onboarding -> workbench.
+2. **Message Conversion** (`src/lib/chat/types.ts`) -- Converts pi-agent-core messages to `ChatMessage` format with typed parts: text, thinking, tool-call.
+3. **Agent Loop** (`@mariozechner/pi-agent-core`) -- Manages the tool-calling agent loop. Sends transcript to LiteLLM, dispatches tool calls, appends results, and repeats until the model returns a final answer.
+4. **Tool Registry** (`src/lib/agent/tools.ts`) -- 6 tools with TypeBox input validation. Returns tool definitions and executor functions keyed by tool name.
 5. **Workbook Adapter** (`WorkbookAdapter` interface) -- Defines the contract for workbook operations: metadata, read, write, clear, image export, and raw Office.js execution.
 6. **Office.js Context** -- All adapter methods run inside `Excel.run()` contexts. The adapter implementation lives in `src/lib/adapters/`.
 7. **Live Excel Workbook** -- The actual spreadsheet open in Excel Online.
@@ -35,18 +36,25 @@ The system is organized in 7 layers, top to bottom:
 ```
 src/
   app/              App shell and MemoryRouter setup
-  components/       UI components (ChatPanel, WorkbookInspector)
+  components/       UI components:
+    ChatThread.tsx     Scrollable message list + input area
+    ChatInput.tsx      Auto-resize textarea, send/stop buttons
+    MessageBubble.tsx  User/assistant message rendering
+    ToolCallCard.tsx   Collapsible tool call display (input/output)
+    ThinkingBlock.tsx  Collapsible thinking + animated indicator
+    WorkbookInspector.tsx  Debug panel for workbook preview
   lib/
     adapters/       WorkbookAdapter interface and Office.js implementation
-    agent/          Agent runtime (runAgentTurn) and tool registry
+    agent/          Agent factory, system prompt, tools, event bridge
+    chat/           Message types and conversion (ChatMessage, ChatMessagePart)
     debug/          Runtime event tracing (timeline)
     excel/          A1 notation utilities
-    litellm/        LiteLLM HTTP client and provider config
-    types/          Type definitions (LLM messages, workbook types)
+    provider/       LiteLLM provider config, env, models
+    types/          Type definitions (workbook types)
   routes/           Page routes (LoginPage, TermsPage, OnboardingPage, WorkbenchPage)
   state/            Zustand stores (sessionStore)
-  styles/           CSS
-docs/               Documentation (e2e-workflow.md)
+  styles/           CSS (single index.css)
+e2e/                Playwright E2E tests
 ```
 
 ## Development Commands
@@ -54,6 +62,7 @@ docs/               Documentation (e2e-workflow.md)
 ```bash
 bun install                # Install dependencies
 bun run dev                # Dev server (https://localhost:5173)
+bun run dev:stop           # Kill dev server on port 5173
 bun run build              # TypeScript check + production build
 bun run typecheck          # TypeScript type checking only
 bun run lint               # Biome lint
@@ -61,8 +70,8 @@ bun run format             # Biome format (auto-fix)
 bun run certs:install      # Install HTTPS certs for Office.js dev
 bun run certs:verify       # Verify HTTPS certs
 bun run manifest:validate  # Validate Office add-in manifest.xml
-bun run office:web:start   # Launch Excel Online with sideloaded add-in
-bun run office:web:stop    # Stop the Office debugging session
+bun run e2e                # Run Playwright E2E tests
+bun run e2e:headed         # E2E tests in headed mode
 ```
 
 ## Environment
@@ -70,46 +79,52 @@ bun run office:web:stop    # Stop the Office debugging session
 - **LiteLLM proxy**: `http://localhost:4000` (default upstream)
 - **Default model**: `claude-opus-4.6`
 - **Dev server**: `https://localhost:5173` (HTTPS required for Office.js)
-- **Vite proxy**: `/api/litellm/*` proxies to `LITELLM_UPSTREAM_URL` (bridges HTTPS taskpane to HTTP LiteLLM)
+- **Vite proxy**: `/api/litellm/*` proxies to `LITELLM_UPSTREAM_URL`
 
-Environment variables:
+Environment variables (see `.env.example`):
 
 | Variable | Purpose |
 |---|---|
 | `LITELLM_UPSTREAM_URL` | LiteLLM upstream URL for the Vite proxy |
-| `VITE_LITELLM_BASE_URL` | Base URL exposed to the client |
-| `VITE_LITELLM_MODEL` | Model alias override |
-| `VITE_LITELLM_API_KEY` | API key for LiteLLM |
+| `VITE_PROVIDER_BASE_URL` | Base URL exposed to the client (default: `/api/litellm/v1`) |
+| `VITE_PROVIDER_MODEL` | Model alias override (default: `claude-opus-4.6`) |
+| `VITE_PROVIDER_API_KEY` | API key for LiteLLM |
+| `VITE_PROVIDER_NAME` | Provider name (default: `litellm`) |
 
 ## E2E Testing
 
-Chrome DevTools MCP (CDM) is configured as the E2E testing tool. It drives Chrome with a persistent profile that has Microsoft/Excel Online sessions cached.
+Playwright E2E tests drive a real Chrome browser against Excel Online.
 
-- CDM config: `.claude/settings.local.json`
-- Chrome profile: `~/.cache/chrome-devtools-mcp/chrome-profile`
-- Full E2E docs: `docs/e2e-workflow.md`
+- Tests: `e2e/e2e.spec.ts` (5 tests, ~50s total)
+- Auth state cached: `e2e/.auth/state.json`
+- **Dev server must be running** before tests
+- Tests login to Microsoft, open Excel, sideload manifest, verify chat UI, submit prompt
 
-CDM tools available: `browser_navigate`, `browser_click`, `browser_type`, `browser_evaluate`, `browser_snapshot`.
+CSS selectors used in tests:
+- `.chat-input-textarea` - chat input field
+- `.chat-input-btn-send` - send button
+- `.msg-assistant` - assistant message container
+- `.app-title` - header title
 
-## Development Workflow (CRITICAL)
+## UI Component CSS Classes
 
-Every feature must be E2E tested in Excel Online before committing. The real Excel Online taskpane is the primary validation path.
+Key CSS class naming convention (flat BEM-like):
 
-1. Start the dev server:
-   ```bash
-   bun run dev
-   ```
-2. Open Excel Online and sideload the add-in (or use CDM to navigate).
-3. In Excel Online, open the add-in from `More options` -> `OpenExcel`.
-4. If the taskpane is not at the workbench, complete the route flow: login -> terms -> onboarding -> workbench.
-5. Confirm the model pill shows `claude-opus-4.6`.
-6. Run a test query against the live workbook. Verify the add-in reads and writes correctly.
-7. Check the debug timeline for expected trace events.
-8. After E2E passes, run the full check suite:
-   ```bash
-   bun run typecheck && bun run lint && bun run build
-   ```
-9. Only then commit.
+- Messages: `.msg`, `.msg-user`, `.msg-assistant`, `.msg-bubble-user`, `.msg-content`, `.msg-text`
+- Tool cards: `.tool-card`, `.tool-card-header`, `.tool-card-body`, `.tool-card-code`
+- Thinking: `.thinking-block`, `.thinking-indicator`, `.thinking-dot`
+- Input: `.chat-input-container`, `.chat-input-wrapper`, `.chat-input-textarea`, `.chat-input-btn-send`, `.chat-input-btn-stop`
+- Thread: `.thread`, `.thread-messages`, `.thread-input`, `.thread-empty`
+- App shell: `.app-shell`, `.app-header`, `.app-content`, `.chat-area`
+
+## Development Workflow
+
+Every feature must be E2E tested in Excel Online before committing.
+
+1. Start the dev server: `bun run dev`
+2. Run E2E tests: `bun run e2e`
+3. Run the full check suite: `bun run typecheck && bun run lint && bun run build`
+4. Only then commit.
 
 ## Commit Conventions
 
@@ -129,39 +144,12 @@ Every feature must be E2E tested in Excel Online before committing. The real Exc
 | `get_range_image` | Export a worksheet range as a Base64 PNG image for visual debugging or style comparison. |
 | `execute_office_js` | Run arbitrary Office.js code inside `Excel.run()`. Fallback for formatting, layout, tables, and other host-only actions. |
 
-All tool inputs are validated with Zod schemas before execution. The agent system prompt instructs the model to prefer structured tools over `execute_office_js`.
+All tool inputs are validated with TypeBox schemas before execution. The agent system prompt instructs the model to prefer structured tools over `execute_office_js`.
 
 ## Known Constraints
 
 - The add-in runs in Excel Online's browser sandbox. It cannot access localhost directly from the iframe.
 - All LLM API calls must go through the Vite proxy (`/api/litellm/v1`) to bridge HTTPS to HTTP.
 - Office.js APIs require an `Excel.run()` context for all workbook operations.
-- The taskpane iframe has limited DOM access. Chrome DevTools can debug the taskpane, but programmatic DOM manipulation requires dispatching native events.
-- The agent loop hard-caps at 8 tool-calling iterations per turn. If exceeded, the runtime throws.
-- Temperature is fixed at 0.2 for all completions.
-
-## Testing Checklist for New Features
-
-- [ ] TypeScript compiles: `bun run typecheck`
-- [ ] Lint passes: `bun run lint`
-- [ ] Build succeeds: `bun run build`
-- [ ] E2E: Add-in loads in Excel Online taskpane
-- [ ] E2E: Feature works against live workbook
-- [ ] E2E: Agent reads back results to verify correctness
-- [ ] Debug timeline shows expected trace events
-
-## Common Failure Patterns
-
-- **HTTPS taskpane cannot call HTTP LiteLLM directly**: Use `/api/litellm/v1` in the client and set `LITELLM_UPSTREAM_URL` for the Vite proxy.
-- **Tool loop stalls**: Open the debug timeline. If only `llm-request` events appear with no tool results, check LiteLLM logs.
-- **Assistant plans but never calls tools**: Inspect LiteLLM response parsing. Some providers split content and tool calls across multiple choices.
-- **Wrong add-in opens**: Reopen from `More options` and explicitly choose `OpenExcel`.
-
-## Future Plans
-
-- Add streaming responses
-- Add pi-web-ui integration
-- Add more workbook tools
-- Support Word and PowerPoint surfaces
-- MCP integration
-- Telemetry and analytics
+- The taskpane iframe has limited DOM access.
+- `index.html` must exist at project root -- Vite uses it as the entry point. If deleted, the dev server returns 404.

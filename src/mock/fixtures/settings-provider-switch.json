@@ -1,0 +1,40 @@
+{
+  "name": "Settings: Switch Provider",
+  "description": "Shows Copilot connected but custom provider active, demonstrating provider switching UI with both tabs showing state",
+  "category": "settings",
+  "autoPlay": false,
+  "openSettings": true,
+  "providerState": {
+    "provider": "custom",
+    "customConfig": {
+      "baseUrl": "/api/litellm/v1",
+      "model": "claude-opus-4.6",
+      "apiKey": ""
+    },
+    "copilotConnected": true,
+    "copilotModelId": "gpt-4.1",
+    "activeTab": "custom"
+  },
+  "turns": [
+    {
+      "userMessage": "Test after switching provider",
+      "events": [
+        { "type": "turn_start", "delay": 100 },
+        {
+          "type": "turn_end",
+          "delay": 300,
+          "message": {
+            "content": [
+              {
+                "type": "text",
+                "text": "I'm now running on the custom provider. You can switch back to GitHub Copilot anytime from the settings panel."
+              }
+            ],
+            "stopReason": "stop",
+            "usage": { "input": 90, "output": 30 }
+          }
+        }
+      ]
+    }
+  ]
+}

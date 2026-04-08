@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getBaseUrlValidationError, normaliseProvider } from "../lib/provider/config";
+import { getBaseUrlValidationError, normaliseCustomProvider } from "../lib/provider/config";
 import { listProviderModels } from "../lib/provider/models";
 import { defaultProvider, useSessionStore } from "../state/sessionStore";
 
@@ -8,9 +8,10 @@ export function LoginPage() {
   const navigate = useNavigate();
   const provider = useSessionStore((state) => state.provider);
   const setProvider = useSessionStore((state) => state.setProvider);
-  const [baseUrl, setBaseUrl] = useState(provider.baseUrl);
-  const [apiKey, setApiKey] = useState(provider.apiKey);
-  const [model, setModel] = useState(provider.model);
+  const customDefaults = provider.type === "custom" ? provider : defaultProvider;
+  const [baseUrl, setBaseUrl] = useState(customDefaults.baseUrl);
+  const [apiKey, setApiKey] = useState(customDefaults.apiKey);
+  const [model, setModel] = useState(customDefaults.model);
   const [models, setModels] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -68,7 +69,7 @@ export function LoginPage() {
           className="stack-form"
           onSubmit={(event) => {
             event.preventDefault();
-            const nextProvider = normaliseProvider({ apiKey, baseUrl, model });
+            const nextProvider = normaliseCustomProvider({ type: "custom", apiKey, baseUrl, model });
             const validationError = getBaseUrlValidationError(nextProvider.baseUrl);
 
             if (validationError) {

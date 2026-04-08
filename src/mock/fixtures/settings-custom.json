@@ -1,0 +1,38 @@
+{
+  "name": "Settings: Custom Provider",
+  "description": "Shows the settings panel with a custom LiteLLM provider configured and active",
+  "category": "settings",
+  "autoPlay": false,
+  "openSettings": true,
+  "providerState": {
+    "provider": "custom",
+    "customConfig": {
+      "baseUrl": "https://api.example.com/v1",
+      "model": "gpt-4.1",
+      "apiKey": "sk-demo-key-12345"
+    },
+    "activeTab": "custom"
+  },
+  "turns": [
+    {
+      "userMessage": "Hello from custom provider",
+      "events": [
+        { "type": "turn_start", "delay": 100 },
+        {
+          "type": "turn_end",
+          "delay": 300,
+          "message": {
+            "content": [
+              {
+                "type": "text",
+                "text": "Hello! I'm running on a custom provider (gpt-4.1 via LiteLLM). How can I help you with your Excel workbook?"
+              }
+            ],
+            "stopReason": "stop",
+            "usage": { "input": 120, "output": 35 }
+          }
+        }
+      ]
+    }
+  ]
+}
