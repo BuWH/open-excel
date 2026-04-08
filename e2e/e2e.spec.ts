@@ -283,8 +283,8 @@ test.describe("Open Excel E2E", () => {
 
     // The app now loads directly to the chat interface (no boot flow).
     // Verify the composer input and header are visible.
-    await expect(taskpane!.locator(".aui-composer-input")).toBeVisible({ timeout: 15_000 });
-    await expect(taskpane!.locator(".aui-composer-send")).toBeVisible();
+    await expect(taskpane!.locator(".chat-input-textarea")).toBeVisible({ timeout: 15_000 });
+    await expect(taskpane!.locator(".chat-input-btn-send")).toBeVisible();
     await expect(taskpane!.locator(".app-title")).toBeVisible();
   });
 
@@ -313,23 +313,23 @@ test.describe("Open Excel E2E", () => {
     // The unique value should NOT already be in B1
     expect(valueBefore.trim()).not.toBe(uniqueValue);
 
-    // Type into the assistant-ui composer input
-    const composerInput = taskpane!.locator(".aui-composer-input");
+    // Type into the chat input textarea
+    const composerInput = taskpane!.locator(".chat-input-textarea");
     await composerInput.waitFor({ timeout: 10_000 });
     await composerInput.fill(prompt);
 
     // Click the send button
-    const sendBtn = taskpane!.locator(".aui-composer-send");
+    const sendBtn = taskpane!.locator(".chat-input-btn-send");
     await expect(sendBtn).toBeVisible();
     await sendBtn.click();
 
     // Wait for the agent to finish: the user message should appear, then
     // an assistant message should appear after the agent completes.
-    // The assistant-ui composer input gets cleared after sending.
+    // The chat input gets cleared after sending.
     await expect(composerInput).toHaveValue("", { timeout: 5_000 });
 
     // Wait for at least one assistant message to appear
-    const assistantMessages = taskpane!.locator(".aui-message-assistant");
+    const assistantMessages = taskpane!.locator(".msg-assistant");
     await expect(assistantMessages.first()).toBeVisible({ timeout: 90_000 });
 
     // Wait for the agent to stop running (composer re-enables)
