@@ -34,7 +34,6 @@ export function createExcelAgent(
           if (!refreshPromise) {
             refreshPromise = refreshGitHubCopilotToken(
               config.credentials.refresh,
-              config.enterpriseDomain,
             )
               .then((refreshed) => {
                 onCredentialsRefreshed?.(refreshed);

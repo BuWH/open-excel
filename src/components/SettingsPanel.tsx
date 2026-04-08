@@ -15,7 +15,6 @@ type Tab = "custom" | "github-copilot";
 
 type CopilotFlowState =
   | { step: "idle" }
-  | { step: "prompting"; message: string; placeholder?: string; allowEmpty?: boolean }
   | { step: "waiting-for-auth"; url: string; userCode: string }
   | { step: "progress"; message: string }
   | { step: "error"; message: string };
@@ -213,16 +212,14 @@ function CopilotProviderSection({
   onModelChange,
   onDisconnect,
 }: {
-  config: { modelId: string; credentials: OAuthCredentials | null; enterpriseDomain?: string } | null;
-  onCredentials: (credentials: OAuthCredentials, enterpriseDomain?: string) => void;
+  config: { modelId: string; credentials: OAuthCredentials | null } | null;
+  onCredentials: (credentials: OAuthCredentials) => void;
   onModelChange: (modelId: string) => void;
   onDisconnect: () => void;
 }) {
   const isConnected = config?.credentials != null;
   const [flowState, setFlowState] = useState<CopilotFlowState>({ step: "idle" });
   const abortRef = useRef<AbortController | null>(null);
-  const promptResolveRef = useRef<((value: string) => void) | null>(null);
-  const [promptInput, setPromptInput] = useState("");
 
   const copilotModels = getModels("github-copilot");
 
@@ -240,18 +237,7 @@ function CopilotProviderSection({
             userCode: codeMatch?.[1] ?? instructions ?? "",
           });
         },
-        onPrompt: (prompt) => {
-          return new Promise<string>((resolve) => {
-            promptResolveRef.current = resolve;
-            setPromptInput("");
-            setFlowState({
-              step: "prompting",
-              message: prompt.message,
-              placeholder: prompt.placeholder,
-              allowEmpty: prompt.allowEmpty,
-            });
-          });
-        },
+        onPrompt: async () => "",
         onProgress: (message) => {
           setFlowState({ step: "progress", message });
         },
@@ -277,11 +263,6 @@ function CopilotProviderSection({
     abortRef.current = null;
     setFlowState({ step: "idle" });
   }, []);
-
-  const handlePromptSubmit = useCallback(() => {
-    promptResolveRef.current?.(promptInput);
-    promptResolveRef.current = null;
-  }, [promptInput]);
 
   if (isConnected) {
     return (
@@ -325,29 +306,6 @@ function CopilotProviderSection({
             Sign in with GitHub
           </button>
         </>
-      )}
-
-      {flowState.step === "prompting" && (
-        <div className="settings-auth-card">
-          <p className="settings-auth-label">{flowState.message}</p>
-          <div className="settings-auth-prompt-row">
-            <input
-              className="settings-auth-input"
-              placeholder={flowState.placeholder}
-              value={promptInput}
-              onChange={(e) => setPromptInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handlePromptSubmit();
-              }}
-            />
-            <button className="ghost-button" type="button" onClick={handlePromptSubmit}>
-              {flowState.allowEmpty ? "Skip" : "Submit"}
-            </button>
-          </div>
-          <button className="settings-cancel-link" type="button" onClick={handleCancel}>
-            Cancel
-          </button>
-        </div>
       )}
 
       {flowState.step === "waiting-for-auth" && (

@@ -9,7 +9,7 @@ type SessionState = {
   termsAccepted: boolean;
   onboardingCompleted: boolean;
   setProvider(provider: ProviderConfig): void;
-  setCopilotCredentials(credentials: OAuthCredentials, enterpriseDomain?: string): void;
+  setCopilotCredentials(credentials: OAuthCredentials): void;
   setCopilotModel(modelId: string): void;
   acceptTerms(): void;
   completeOnboarding(): void;
@@ -25,13 +25,12 @@ export const useSessionStore = create<SessionState>()(
       termsAccepted: false,
       onboardingCompleted: false,
       setProvider: (provider) => set({ provider: normaliseProvider(provider) }),
-      setCopilotCredentials: (credentials, enterpriseDomain) =>
+      setCopilotCredentials: (credentials) =>
         set({
           provider: {
             type: "github-copilot",
             modelId: "claude-sonnet-4.5",
             credentials,
-            enterpriseDomain,
           },
         }),
       setCopilotModel: (modelId) =>

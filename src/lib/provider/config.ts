@@ -11,7 +11,6 @@ export type CopilotProviderConfig = {
   type: "github-copilot";
   modelId: string;
   credentials: OAuthCredentials | null;
-  enterpriseDomain?: string;
 };
 
 export type ProviderConfig = CustomProviderConfig | CopilotProviderConfig;
