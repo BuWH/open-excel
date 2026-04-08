@@ -43,6 +43,21 @@ export function SettingsPanel({
     initialTab ?? (isCopilotActive ? "github-copilot" : "custom"),
   );
 
+  const handleProviderSwitch = useCallback(
+    (value: string) => {
+      if (value === "custom") {
+        switchToCustom();
+        setTab("custom");
+      } else if (value === "github-copilot") {
+        if (copilotCredentials) {
+          switchToCopilot();
+        }
+        setTab("github-copilot");
+      }
+    },
+    [copilotCredentials, switchToCustom, switchToCopilot],
+  );
+
   return (
     <div className="settings-overlay">
       <div className="settings-overlay-header">
@@ -50,6 +65,22 @@ export function SettingsPanel({
         <button className="debug-close-btn" type="button" onClick={onClose}>
           Close
         </button>
+      </div>
+
+      {/* Active provider selector */}
+      <div className="settings-provider-selector">
+        <label className="settings-provider-selector-label">Active Provider</label>
+        <select
+          className="settings-select"
+          value={provider.type}
+          onChange={(e) => handleProviderSwitch(e.target.value)}
+        >
+          <option value="custom">Custom (LiteLLM)</option>
+          <option value="github-copilot" disabled={!copilotCredentials}>
+            GitHub Copilot
+            {!copilotCredentials ? " (not connected)" : ""}
+          </option>
+        </select>
       </div>
 
       <div className="settings-tabs">
@@ -74,7 +105,6 @@ export function SettingsPanel({
           config={customConfig}
           isActive={isCustomActive}
           onSave={setCustomConfig}
-          onActivate={switchToCustom}
         />
       )}
 
@@ -85,7 +115,6 @@ export function SettingsPanel({
           isActive={isCopilotActive}
           onCredentials={setCopilotCredentials}
           onModelChange={setCopilotModel}
-          onActivate={switchToCopilot}
           onDisconnect={clearCopilotCredentials}
         />
       )}
@@ -101,12 +130,10 @@ function CustomProviderForm({
   config,
   isActive,
   onSave,
-  onActivate,
 }: {
   config: CustomProviderConfig;
   isActive: boolean;
   onSave: (config: CustomProviderConfig) => void;
-  onActivate: () => void;
 }) {
   const [baseUrl, setBaseUrl] = useState(config.baseUrl);
   const [apiKey, setApiKey] = useState(config.apiKey);
@@ -152,7 +179,12 @@ function CustomProviderForm({
   }, [apiKey, baseUrl, model]);
 
   const handleSave = useCallback(() => {
-    const next = normaliseCustomProvider({ type: "custom", apiKey, baseUrl, model });
+    const next = normaliseCustomProvider({
+      type: "custom",
+      apiKey,
+      baseUrl,
+      model,
+    });
     const validationError = getBaseUrlValidationError(next.baseUrl);
     if (validationError) {
       setError(validationError);
@@ -165,6 +197,7 @@ function CustomProviderForm({
 
   return (
     <div className="settings-section">
+      {isActive && <div className="settings-active-badge">Currently Active</div>}
       <div className="stack-form">
         <label>
           Base URL
@@ -217,12 +250,6 @@ function CustomProviderForm({
         <button type="button" onClick={handleSave}>
           {saved ? "Saved" : "Save & Apply"}
         </button>
-
-        {!isActive && (
-          <button className="ghost-button" type="button" onClick={onActivate}>
-            Switch to Custom
-          </button>
-        )}
       </div>
     </div>
   );
@@ -238,7 +265,6 @@ function CopilotProviderSection({
   isActive,
   onCredentials,
   onModelChange,
-  onActivate,
   onDisconnect,
 }: {
   credentials: OAuthCredentials | null;
@@ -246,11 +272,12 @@ function CopilotProviderSection({
   isActive: boolean;
   onCredentials: (credentials: OAuthCredentials) => void;
   onModelChange: (modelId: string) => void;
-  onActivate: () => void;
   onDisconnect: () => void;
 }) {
   const isConnected = credentials != null;
-  const [flowState, setFlowState] = useState<CopilotFlowState>({ step: "idle" });
+  const [flowState, setFlowState] = useState<CopilotFlowState>({
+    step: "idle",
+  });
   const abortRef = useRef<AbortController | null>(null);
   const [copilotModels, setCopilotModels] = useState<Array<{ id: string; name: string }>>([]);
   const [modelsLoading, setModelsLoading] = useState(false);
@@ -318,6 +345,7 @@ function CopilotProviderSection({
   if (isConnected) {
     return (
       <div className="settings-section">
+        {isActive && <div className="settings-active-badge">Currently Active</div>}
         <div className="settings-status">
           <span className="settings-status-dot settings-status-dot--connected" />
           <span>Connected to GitHub Copilot</span>
@@ -345,12 +373,6 @@ function CopilotProviderSection({
             ? "Fetching available models..."
             : `${copilotModels.length} models available`}
         </p>
-
-        {!isActive && (
-          <button type="button" onClick={onActivate}>
-            Use GitHub Copilot
-          </button>
-        )}
 
         <button className="ghost-button settings-disconnect" type="button" onClick={onDisconnect}>
           Disconnect

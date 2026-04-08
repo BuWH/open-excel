@@ -1294,6 +1294,32 @@ select {
   font-weight: 600;
 }
 
+.settings-provider-selector {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.settings-provider-selector-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6b7280;
+}
+
+.settings-active-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #166534;
+  background: #dcfce7;
+  border: 1px solid #bbf7d0;
+  border-radius: 4px;
+  padding: 0.2rem 0.5rem;
+  align-self: flex-start;
+}
+
 .settings-section {
   display: flex;
   flex-direction: column;
