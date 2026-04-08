@@ -8,16 +8,46 @@ import { convertMessages } from "../lib/chat/types";
 import type { DebugTurnRecord } from "../lib/debug/runtimeEvents";
 import { getModelDisplayId } from "../lib/provider/resolveModel";
 import { useSessionStore } from "../state/sessionStore";
-import type { MockScenario } from "./mockAgentDriver";
+import type { MockProviderState, MockScenario } from "./mockAgentDriver";
 import { MockAgentDriver } from "./mockAgentDriver";
 import { ScenarioPicker } from "./ScenarioPicker";
 import { ALL_SCENARIOS } from "./scenarioLoader";
 
 const MOCK_MODEL_ID = "mock-model";
 
+const MOCK_COPILOT_CREDENTIALS = {
+  access: "ghu_mock_access_token_for_ui_testing",
+  refresh: "ghr_mock_refresh_token_for_ui_testing",
+  expires: Date.now() + 3600_000,
+};
+
+function applyProviderState(ps: MockProviderState) {
+  const store = useSessionStore.getState();
+  if (ps.customConfig) {
+    store.setCustomConfig({
+      type: "custom",
+      baseUrl: ps.customConfig.baseUrl,
+      model: ps.customConfig.model,
+      apiKey: ps.customConfig.apiKey,
+    });
+  }
+  if (ps.copilotConnected) {
+    store.setCopilotCredentials(MOCK_COPILOT_CREDENTIALS);
+    if (ps.copilotModelId) store.setCopilotModel(ps.copilotModelId);
+  } else if (ps.copilotConnected === false) {
+    store.clearCopilotCredentials();
+  }
+  if (ps.provider === "github-copilot" && ps.copilotConnected) {
+    store.switchToCopilot();
+  } else {
+    store.switchToCustom();
+  }
+}
+
 export function MockWorkbenchPage() {
   const [showDebug, setShowDebug] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [settingsTab, setSettingsTab] = useState<"custom" | "github-copilot" | undefined>();
   const [debugTurns, setDebugTurns] = useState<DebugTurnRecord[]>([]);
   const [messages, setMessages] = useState<AgentMessage[]>([]);
   const [isRunning, setIsRunning] = useState(false);
@@ -176,6 +206,13 @@ export function MockWorkbenchPage() {
     setMessages([]);
     setDebugTurns([]);
     setIsRunning(false);
+    if (newScenario.providerState) {
+      applyProviderState(newScenario.providerState);
+      setSettingsTab(newScenario.providerState.activeTab);
+    } else {
+      setSettingsTab(undefined);
+    }
+    setShowSettings(newScenario.openSettings === true);
     setScenario(newScenario);
     setScenarioKey((k) => k + 1);
   }, []);
@@ -194,10 +231,22 @@ export function MockWorkbenchPage() {
             <button
               className="icon-button"
               type="button"
-              onClick={() => setShowSettings((prev) => !prev)}
+              onClick={() => {
+                setShowSettings((prev) => !prev);
+                setSettingsTab(undefined);
+              }}
               title="Settings"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <title>Settings</title>
                 <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
                 <circle cx="12" cy="12" r="3" />
@@ -294,7 +343,9 @@ export function MockWorkbenchPage() {
             </aside>
           )}
 
-          {showSettings && <SettingsPanel onClose={() => setShowSettings(false)} />}
+          {showSettings && (
+            <SettingsPanel onClose={() => setShowSettings(false)} initialTab={settingsTab} />
+          )}
         </div>
       </main>
 

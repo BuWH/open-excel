@@ -19,7 +19,13 @@ type CopilotFlowState =
   | { step: "progress"; message: string }
   | { step: "error"; message: string };
 
-export function SettingsPanel({ onClose }: { onClose: () => void }) {
+export function SettingsPanel({
+  onClose,
+  initialTab,
+}: {
+  onClose: () => void;
+  initialTab?: "custom" | "github-copilot";
+}) {
   const provider = useSessionStore((s) => s.provider);
   const customConfig = useSessionStore((s) => s.customConfig);
   const copilotCredentials = useSessionStore((s) => s.copilotCredentials);
@@ -33,7 +39,9 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
 
   const isCustomActive = provider.type === "custom";
   const isCopilotActive = provider.type === "github-copilot";
-  const [tab, setTab] = useState<Tab>(isCopilotActive ? "github-copilot" : "custom");
+  const [tab, setTab] = useState<Tab>(
+    initialTab ?? (isCopilotActive ? "github-copilot" : "custom"),
+  );
 
   return (
     <div className="settings-overlay">
@@ -179,11 +187,7 @@ function CustomProviderForm({
 
         <label>
           Model
-          <input
-            list="settings-models"
-            value={model}
-            onChange={(e) => setModel(e.target.value)}
-          />
+          <input list="settings-models" value={model} onChange={(e) => setModel(e.target.value)} />
           <datalist id="settings-models">
             {models.map((m) => (
               <option key={m} value={m} />
@@ -265,7 +269,9 @@ function CopilotProviderSection({
       .finally(() => {
         if (!cancelled) setModelsLoading(false);
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [isConnected, credentials]);
 
   const handleLogin = useCallback(async () => {

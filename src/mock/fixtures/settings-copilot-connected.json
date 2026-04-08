@@ -1,0 +1,35 @@
+{
+  "name": "Settings: Copilot Connected",
+  "description": "Shows the settings panel with GitHub Copilot authenticated and active, model selected",
+  "category": "settings",
+  "autoPlay": false,
+  "openSettings": true,
+  "providerState": {
+    "provider": "github-copilot",
+    "copilotConnected": true,
+    "copilotModelId": "claude-sonnet-4.6",
+    "activeTab": "github-copilot"
+  },
+  "turns": [
+    {
+      "userMessage": "What can you do?",
+      "events": [
+        { "type": "turn_start", "delay": 100 },
+        {
+          "type": "turn_end",
+          "delay": 400,
+          "message": {
+            "content": [
+              {
+                "type": "text",
+                "text": "I'm running via GitHub Copilot (claude-sonnet-4.6). I can read, analyze, and modify your Excel workbook using Office.js. Try asking me to summarize your data or create a chart!"
+              }
+            ],
+            "stopReason": "stop",
+            "usage": { "input": 80, "output": 42 }
+          }
+        }
+      ]
+    }
+  ]
+}
