@@ -1,7 +1,7 @@
 import type { OAuthCredentials } from "@mariozechner/pi-ai";
 import { loginGitHubCopilot } from "@mariozechner/pi-ai/oauth";
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { CustomProviderConfig, ProviderConfig } from "../lib/provider/config";
+import type { CustomProviderConfig } from "../lib/provider/config";
 import {
   DEFAULT_PROVIDER,
   getBaseUrlValidationError,
@@ -20,13 +20,20 @@ type CopilotFlowState =
   | { step: "error"; message: string };
 
 export function SettingsPanel({ onClose }: { onClose: () => void }) {
-  const provider = useSessionStore((state) => state.provider);
-  const setProvider = useSessionStore((state) => state.setProvider);
-  const setCopilotCredentials = useSessionStore((state) => state.setCopilotCredentials);
-  const setCopilotModel = useSessionStore((state) => state.setCopilotModel);
+  const provider = useSessionStore((s) => s.provider);
+  const customConfig = useSessionStore((s) => s.customConfig);
+  const copilotCredentials = useSessionStore((s) => s.copilotCredentials);
+  const copilotModelId = useSessionStore((s) => s.copilotModelId);
+  const setCustomConfig = useSessionStore((s) => s.setCustomConfig);
+  const setCopilotCredentials = useSessionStore((s) => s.setCopilotCredentials);
+  const setCopilotModel = useSessionStore((s) => s.setCopilotModel);
+  const clearCopilotCredentials = useSessionStore((s) => s.clearCopilotCredentials);
+  const switchToCustom = useSessionStore((s) => s.switchToCustom);
+  const switchToCopilot = useSessionStore((s) => s.switchToCopilot);
 
-  const activeTab: Tab = provider.type === "github-copilot" ? "github-copilot" : "custom";
-  const [tab, setTab] = useState<Tab>(activeTab);
+  const isCustomActive = provider.type === "custom";
+  const isCopilotActive = provider.type === "github-copilot";
+  const [tab, setTab] = useState<Tab>(isCopilotActive ? "github-copilot" : "custom");
 
   return (
     <div className="settings-overlay">
@@ -43,30 +50,35 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
           type="button"
           onClick={() => setTab("custom")}
         >
-          Custom
+          Custom {isCustomActive && "(active)"}
         </button>
         <button
           className={`settings-tab ${tab === "github-copilot" ? "settings-tab--active" : ""}`}
           type="button"
           onClick={() => setTab("github-copilot")}
         >
-          GitHub Copilot
+          GitHub Copilot {isCopilotActive && "(active)"}
         </button>
       </div>
 
       {tab === "custom" && (
         <CustomProviderForm
-          config={provider.type === "custom" ? provider : DEFAULT_PROVIDER}
-          onSave={setProvider}
+          config={customConfig}
+          isActive={isCustomActive}
+          onSave={setCustomConfig}
+          onActivate={switchToCustom}
         />
       )}
 
       {tab === "github-copilot" && (
         <CopilotProviderSection
-          config={provider.type === "github-copilot" ? provider : null}
+          credentials={copilotCredentials}
+          modelId={copilotModelId}
+          isActive={isCopilotActive}
           onCredentials={setCopilotCredentials}
           onModelChange={setCopilotModel}
-          onDisconnect={() => setProvider(DEFAULT_PROVIDER)}
+          onActivate={switchToCopilot}
+          onDisconnect={clearCopilotCredentials}
         />
       )}
     </div>
@@ -79,10 +91,14 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
 
 function CustomProviderForm({
   config,
+  isActive,
   onSave,
+  onActivate,
 }: {
   config: CustomProviderConfig;
-  onSave: (config: ProviderConfig) => void;
+  isActive: boolean;
+  onSave: (config: CustomProviderConfig) => void;
+  onActivate: () => void;
 }) {
   const [baseUrl, setBaseUrl] = useState(config.baseUrl);
   const [apiKey, setApiKey] = useState(config.apiKey);
@@ -197,6 +213,12 @@ function CustomProviderForm({
         <button type="button" onClick={handleSave}>
           {saved ? "Saved" : "Save & Apply"}
         </button>
+
+        {!isActive && (
+          <button className="ghost-button" type="button" onClick={onActivate}>
+            Switch to Custom
+          </button>
+        )}
       </div>
     </div>
   );
@@ -207,27 +229,33 @@ function CustomProviderForm({
 /* ------------------------------------------------------------------ */
 
 function CopilotProviderSection({
-  config,
+  credentials,
+  modelId,
+  isActive,
   onCredentials,
   onModelChange,
+  onActivate,
   onDisconnect,
 }: {
-  config: { modelId: string; credentials: OAuthCredentials | null } | null;
+  credentials: OAuthCredentials | null;
+  modelId: string;
+  isActive: boolean;
   onCredentials: (credentials: OAuthCredentials) => void;
   onModelChange: (modelId: string) => void;
+  onActivate: () => void;
   onDisconnect: () => void;
 }) {
-  const isConnected = config?.credentials != null;
+  const isConnected = credentials != null;
   const [flowState, setFlowState] = useState<CopilotFlowState>({ step: "idle" });
   const abortRef = useRef<AbortController | null>(null);
   const [copilotModels, setCopilotModels] = useState<Array<{ id: string; name: string }>>([]);
   const [modelsLoading, setModelsLoading] = useState(false);
 
   useEffect(() => {
-    if (!isConnected || !config?.credentials) return;
+    if (!isConnected || !credentials) return;
     let cancelled = false;
     setModelsLoading(true);
-    fetchCopilotModels(config.credentials.access)
+    fetchCopilotModels(credentials.access)
       .then((models) => {
         if (!cancelled) setCopilotModels(models);
       })
@@ -238,14 +266,14 @@ function CopilotProviderSection({
         if (!cancelled) setModelsLoading(false);
       });
     return () => { cancelled = true; };
-  }, [isConnected, config?.credentials]);
+  }, [isConnected, credentials]);
 
   const handleLogin = useCallback(async () => {
     const controller = new AbortController();
     abortRef.current = controller;
 
     try {
-      const credentials = await loginGitHubCopilot({
+      const creds = await loginGitHubCopilot({
         onAuth: (url, instructions) => {
           const codeMatch = instructions?.match(/Enter code:\s*(\S+)/);
           setFlowState({
@@ -261,7 +289,7 @@ function CopilotProviderSection({
         signal: controller.signal,
       });
 
-      onCredentials(credentials);
+      onCredentials(creds);
       setFlowState({ step: "idle" });
     } catch (err) {
       if (controller.signal.aborted) {
@@ -293,7 +321,7 @@ function CopilotProviderSection({
           Model
           <select
             className="settings-select"
-            value={config.modelId}
+            value={modelId}
             onChange={(e) => onModelChange(e.target.value)}
             disabled={modelsLoading}
           >
@@ -307,8 +335,16 @@ function CopilotProviderSection({
         </label>
 
         <p className="field-hint">
-          {modelsLoading ? "Fetching available models..." : `${copilotModels.length} models available`}
+          {modelsLoading
+            ? "Fetching available models..."
+            : `${copilotModels.length} models available`}
         </p>
+
+        {!isActive && (
+          <button type="button" onClick={onActivate}>
+            Use GitHub Copilot
+          </button>
+        )}
 
         <button className="ghost-button settings-disconnect" type="button" onClick={onDisconnect}>
           Disconnect
@@ -333,9 +369,7 @@ function CopilotProviderSection({
 
       {flowState.step === "waiting-for-auth" && (
         <div className="settings-auth-card">
-          <p className="settings-auth-label">
-            Open this URL and enter the code:
-          </p>
+          <p className="settings-auth-label">Open this URL and enter the code:</p>
           <a
             className="settings-auth-url"
             href={flowState.url}
