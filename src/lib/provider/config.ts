@@ -1,8 +1,20 @@
-export type ProviderConfig = {
+import type { OAuthCredentials } from "@mariozechner/pi-ai";
+
+export type CustomProviderConfig = {
+  type: "custom";
   baseUrl: string;
   model: string;
   apiKey: string;
 };
+
+export type CopilotProviderConfig = {
+  type: "github-copilot";
+  modelId: string;
+  credentials: OAuthCredentials | null;
+  enterpriseDomain?: string;
+};
+
+export type ProviderConfig = CustomProviderConfig | CopilotProviderConfig;
 
 const providerEnv = import.meta.env as ImportMetaEnv & {
   VITE_PROVIDER_API_KEY?: string;
@@ -16,7 +28,8 @@ function isLegacyLocalUrl(baseUrl: string) {
   return /^http:\/\/(?:127\.0\.0\.1|localhost):4000\/v1\/?$/i.test(baseUrl.trim());
 }
 
-export const DEFAULT_PROVIDER: ProviderConfig = {
+export const DEFAULT_PROVIDER: CustomProviderConfig = {
+  type: "custom",
   apiKey: providerEnv.VITE_PROVIDER_API_KEY ?? "",
   baseUrl: defaultBaseUrl.replace(/\/+$/, "") || "/api/litellm/v1",
   model: defaultModel || "claude-opus-4.6",
@@ -54,10 +67,18 @@ export function getBaseUrlValidationError(baseUrl: string) {
   return null;
 }
 
-export function normaliseProvider(provider: ProviderConfig): ProviderConfig {
+export function normaliseCustomProvider(provider: CustomProviderConfig): CustomProviderConfig {
   return {
+    type: "custom",
     apiKey: provider.apiKey.trim(),
     baseUrl: normaliseBaseUrl(provider.baseUrl),
     model: provider.model.trim() || DEFAULT_PROVIDER.model,
   };
+}
+
+export function normaliseProvider(provider: ProviderConfig): ProviderConfig {
+  if (provider.type === "github-copilot") {
+    return provider;
+  }
+  return normaliseCustomProvider(provider);
 }

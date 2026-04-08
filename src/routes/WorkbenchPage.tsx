@@ -2,25 +2,32 @@ import type { Agent, AgentEvent, AgentMessage } from "@mariozechner/pi-agent-cor
 import { startTransition, useCallback, useEffect, useRef, useState } from "react";
 import { ChatThread } from "../components/ChatThread";
 import { ErrorLogPanel } from "../components/ErrorLogPanel";
+import { SettingsPanel } from "../components/SettingsPanel";
 import { convertMessages } from "../lib/chat/types";
 import { resolveWorkbookAdapter } from "../lib/adapters/host";
 import type { WorkbookAdapter } from "../lib/adapters/types";
 import { createExcelAgent } from "../lib/agent/agentFactory";
 import { bridgeAgentEvent } from "../lib/agent/eventBridge";
 import type { DebugTurnRecord } from "../lib/debug/runtimeEvents";
-import { ENV_MODEL } from "../lib/provider/env";
+import { getModelDisplayId } from "../lib/provider/resolveModel";
+import { useSessionStore } from "../state/sessionStore";
 
 export function WorkbenchPage() {
   const [adapter, setAdapter] = useState<WorkbookAdapter | null>(null);
   const [hostError, setHostError] = useState<string | null>(null);
   const [showDebug, setShowDebug] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [debugTurns, setDebugTurns] = useState<DebugTurnRecord[]>([]);
   const [messages, setMessages] = useState<AgentMessage[]>([]);
   const [isRunning, setIsRunning] = useState(false);
   const agentRef = useRef<Agent | null>(null);
 
+  const provider = useSessionStore((state) => state.provider);
+  const setCopilotCredentials = useSessionStore((state) => state.setCopilotCredentials);
+
   const iterationRef = useRef(0);
   const turnStartRef = useRef(0);
+  const modelDisplayId = getModelDisplayId(provider);
 
   useEffect(() => {
     let cancelled = false;
@@ -45,8 +52,12 @@ export function WorkbenchPage() {
   useEffect(() => {
     if (!adapter) return;
 
-    const agent = createExcelAgent(adapter);
+    const agent = createExcelAgent(adapter, provider, (refreshed) => {
+      setCopilotCredentials(refreshed);
+    });
     agentRef.current = agent;
+    setMessages([]);
+    setDebugTurns([]);
 
     const unsubscribe = agent.subscribe((event: AgentEvent) => {
       setMessages([...agent.state.messages]);
@@ -71,7 +82,7 @@ export function WorkbenchPage() {
         event,
         iterationRef.current,
         turnStartRef.current,
-        ENV_MODEL.id,
+        modelDisplayId,
         agent.state.messages.length,
       );
 
@@ -97,7 +108,7 @@ export function WorkbenchPage() {
       unsubscribe();
       agent.abort();
     };
-  }, [adapter]);
+  }, [adapter, provider, modelDisplayId, setCopilotCredentials]);
 
   const handleSend = useCallback(async (text: string) => {
     const agent = agentRef.current;
@@ -156,9 +167,20 @@ export function WorkbenchPage() {
       <header className="app-header">
         <div className="app-header-left">
           <h1 className="app-title">OpenExcel</h1>
-          <span className="pill">{ENV_MODEL.id}</span>
+          <span className="pill">{modelDisplayId}</span>
         </div>
         <div className="app-header-right">
+          <button
+            className="icon-button"
+            type="button"
+            onClick={() => setShowSettings((prev) => !prev)}
+            title="Settings"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          </button>
           <button
             className="icon-button"
             type="button"
@@ -231,6 +253,8 @@ export function WorkbenchPage() {
             </section>
           </aside>
         )}
+
+        {showSettings && <SettingsPanel onClose={() => setShowSettings(false)} />}
       </div>
     </main>
   );

@@ -1,0 +1,393 @@
+import type { OAuthCredentials } from "@mariozechner/pi-ai";
+import { getModels } from "@mariozechner/pi-ai";
+import { loginGitHubCopilot } from "@mariozechner/pi-ai/oauth";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { CustomProviderConfig, ProviderConfig } from "../lib/provider/config";
+import {
+  DEFAULT_PROVIDER,
+  getBaseUrlValidationError,
+  normaliseCustomProvider,
+} from "../lib/provider/config";
+import { listProviderModels } from "../lib/provider/models";
+import { useSessionStore } from "../state/sessionStore";
+
+type Tab = "custom" | "github-copilot";
+
+type CopilotFlowState =
+  | { step: "idle" }
+  | { step: "prompting"; message: string; placeholder?: string; allowEmpty?: boolean }
+  | { step: "waiting-for-auth"; url: string; userCode: string }
+  | { step: "progress"; message: string }
+  | { step: "error"; message: string };
+
+export function SettingsPanel({ onClose }: { onClose: () => void }) {
+  const provider = useSessionStore((state) => state.provider);
+  const setProvider = useSessionStore((state) => state.setProvider);
+  const setCopilotCredentials = useSessionStore((state) => state.setCopilotCredentials);
+  const setCopilotModel = useSessionStore((state) => state.setCopilotModel);
+
+  const activeTab: Tab = provider.type === "github-copilot" ? "github-copilot" : "custom";
+  const [tab, setTab] = useState<Tab>(activeTab);
+
+  return (
+    <div className="settings-overlay">
+      <div className="settings-overlay-header">
+        <h2>Settings</h2>
+        <button className="debug-close-btn" type="button" onClick={onClose}>
+          Close
+        </button>
+      </div>
+
+      <div className="settings-tabs">
+        <button
+          className={`settings-tab ${tab === "custom" ? "settings-tab--active" : ""}`}
+          type="button"
+          onClick={() => setTab("custom")}
+        >
+          Custom
+        </button>
+        <button
+          className={`settings-tab ${tab === "github-copilot" ? "settings-tab--active" : ""}`}
+          type="button"
+          onClick={() => setTab("github-copilot")}
+        >
+          GitHub Copilot
+        </button>
+      </div>
+
+      {tab === "custom" && (
+        <CustomProviderForm
+          config={provider.type === "custom" ? provider : DEFAULT_PROVIDER}
+          onSave={setProvider}
+        />
+      )}
+
+      {tab === "github-copilot" && (
+        <CopilotProviderSection
+          config={provider.type === "github-copilot" ? provider : null}
+          onCredentials={setCopilotCredentials}
+          onModelChange={setCopilotModel}
+          onDisconnect={() => setProvider(DEFAULT_PROVIDER)}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Custom provider form                                                */
+/* ------------------------------------------------------------------ */
+
+function CustomProviderForm({
+  config,
+  onSave,
+}: {
+  config: CustomProviderConfig;
+  onSave: (config: ProviderConfig) => void;
+}) {
+  const [baseUrl, setBaseUrl] = useState(config.baseUrl);
+  const [apiKey, setApiKey] = useState(config.apiKey);
+  const [model, setModel] = useState(config.model);
+  const [models, setModels] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadModels() {
+      const validationError = getBaseUrlValidationError(baseUrl);
+      if (validationError) {
+        setModels([]);
+        setError(validationError);
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      setError(null);
+      try {
+        const discovered = await listProviderModels(baseUrl, apiKey);
+        if (!cancelled) {
+          setModels(discovered);
+          if (!model && discovered[0]) setModel(discovered[0]);
+        }
+      } catch (loadError) {
+        if (!cancelled) {
+          setError(loadError instanceof Error ? loadError.message : String(loadError));
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    void loadModels();
+    return () => {
+      cancelled = true;
+    };
+  }, [apiKey, baseUrl, model]);
+
+  const handleSave = useCallback(() => {
+    const next = normaliseCustomProvider({ type: "custom", apiKey, baseUrl, model });
+    const validationError = getBaseUrlValidationError(next.baseUrl);
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+    onSave(next);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 1500);
+  }, [apiKey, baseUrl, model, onSave]);
+
+  return (
+    <div className="settings-section">
+      <div className="stack-form">
+        <label>
+          Base URL
+          <input value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} />
+        </label>
+        <p className="field-hint">
+          Use `/api/litellm/v1` for Excel Online sideload. The dev server proxies it to your
+          upstream.
+        </p>
+
+        <label>
+          API Key
+          <input
+            type="password"
+            placeholder="Optional"
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+          />
+        </label>
+
+        <label>
+          Model
+          <input
+            list="settings-models"
+            value={model}
+            onChange={(e) => setModel(e.target.value)}
+          />
+          <datalist id="settings-models">
+            {models.map((m) => (
+              <option key={m} value={m} />
+            ))}
+          </datalist>
+        </label>
+
+        <div className="status-row">
+          <span className="field-hint">
+            {loading ? "Discovering models..." : `${models.length} models visible`}
+          </span>
+          <button
+            className="ghost-button"
+            type="button"
+            onClick={() => {
+              setBaseUrl(DEFAULT_PROVIDER.baseUrl);
+              setApiKey(DEFAULT_PROVIDER.apiKey);
+              setModel(DEFAULT_PROVIDER.model);
+            }}
+          >
+            Reset defaults
+          </button>
+        </div>
+
+        {error && <p className="error-callout">{error}</p>}
+
+        <button type="button" onClick={handleSave}>
+          {saved ? "Saved" : "Save & Apply"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* GitHub Copilot provider section                                     */
+/* ------------------------------------------------------------------ */
+
+function CopilotProviderSection({
+  config,
+  onCredentials,
+  onModelChange,
+  onDisconnect,
+}: {
+  config: { modelId: string; credentials: OAuthCredentials | null; enterpriseDomain?: string } | null;
+  onCredentials: (credentials: OAuthCredentials, enterpriseDomain?: string) => void;
+  onModelChange: (modelId: string) => void;
+  onDisconnect: () => void;
+}) {
+  const isConnected = config?.credentials != null;
+  const [flowState, setFlowState] = useState<CopilotFlowState>({ step: "idle" });
+  const abortRef = useRef<AbortController | null>(null);
+  const promptResolveRef = useRef<((value: string) => void) | null>(null);
+  const [promptInput, setPromptInput] = useState("");
+
+  const copilotModels = getModels("github-copilot");
+
+  const handleLogin = useCallback(async () => {
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    try {
+      const credentials = await loginGitHubCopilot({
+        onAuth: (url, instructions) => {
+          const codeMatch = instructions?.match(/Enter code:\s*(\S+)/);
+          setFlowState({
+            step: "waiting-for-auth",
+            url,
+            userCode: codeMatch?.[1] ?? instructions ?? "",
+          });
+        },
+        onPrompt: (prompt) => {
+          return new Promise<string>((resolve) => {
+            promptResolveRef.current = resolve;
+            setPromptInput("");
+            setFlowState({
+              step: "prompting",
+              message: prompt.message,
+              placeholder: prompt.placeholder,
+              allowEmpty: prompt.allowEmpty,
+            });
+          });
+        },
+        onProgress: (message) => {
+          setFlowState({ step: "progress", message });
+        },
+        signal: controller.signal,
+      });
+
+      onCredentials(credentials);
+      setFlowState({ step: "idle" });
+    } catch (err) {
+      if (controller.signal.aborted) {
+        setFlowState({ step: "idle" });
+        return;
+      }
+      setFlowState({
+        step: "error",
+        message: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }, [onCredentials]);
+
+  const handleCancel = useCallback(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setFlowState({ step: "idle" });
+  }, []);
+
+  const handlePromptSubmit = useCallback(() => {
+    promptResolveRef.current?.(promptInput);
+    promptResolveRef.current = null;
+  }, [promptInput]);
+
+  if (isConnected) {
+    return (
+      <div className="settings-section">
+        <div className="settings-status">
+          <span className="settings-status-dot settings-status-dot--connected" />
+          <span>Connected to GitHub Copilot</span>
+        </div>
+
+        <label className="settings-label">
+          Model
+          <select
+            className="settings-select"
+            value={config.modelId}
+            onChange={(e) => onModelChange(e.target.value)}
+          >
+            {copilotModels.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <button className="ghost-button settings-disconnect" type="button" onClick={onDisconnect}>
+          Disconnect
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="settings-section">
+      {flowState.step === "idle" && (
+        <>
+          <p className="field-hint">
+            Sign in with your GitHub account to use Copilot models. Requires an active GitHub
+            Copilot subscription.
+          </p>
+          <button type="button" onClick={handleLogin}>
+            Sign in with GitHub
+          </button>
+        </>
+      )}
+
+      {flowState.step === "prompting" && (
+        <div className="settings-auth-card">
+          <p className="settings-auth-label">{flowState.message}</p>
+          <div className="settings-auth-prompt-row">
+            <input
+              className="settings-auth-input"
+              placeholder={flowState.placeholder}
+              value={promptInput}
+              onChange={(e) => setPromptInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handlePromptSubmit();
+              }}
+            />
+            <button className="ghost-button" type="button" onClick={handlePromptSubmit}>
+              {flowState.allowEmpty ? "Skip" : "Submit"}
+            </button>
+          </div>
+          <button className="settings-cancel-link" type="button" onClick={handleCancel}>
+            Cancel
+          </button>
+        </div>
+      )}
+
+      {flowState.step === "waiting-for-auth" && (
+        <div className="settings-auth-card">
+          <p className="settings-auth-label">
+            Open this URL and enter the code:
+          </p>
+          <a
+            className="settings-auth-url"
+            href={flowState.url}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {flowState.url}
+          </a>
+          <div className="settings-auth-code">{flowState.userCode}</div>
+          <p className="field-hint">Waiting for authorization...</p>
+          <button className="settings-cancel-link" type="button" onClick={handleCancel}>
+            Cancel
+          </button>
+        </div>
+      )}
+
+      {flowState.step === "progress" && (
+        <div className="settings-auth-card">
+          <div className="working-indicator">
+            <span className="working-indicator-dot" />
+            <span>{flowState.message}</span>
+          </div>
+        </div>
+      )}
+
+      {flowState.step === "error" && (
+        <div className="settings-auth-card">
+          <p className="error-callout">{flowState.message}</p>
+          <button type="button" onClick={handleLogin}>
+            Try again
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
