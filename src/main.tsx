@@ -1,7 +1,10 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./app/App";
+import { installGitHubProxy } from "./lib/provider/githubProxy";
 import "./styles/index.css";
+
+installGitHubProxy();
 
 const OFFICE_JS_URL = "https://appsforoffice.microsoft.com/lib/1/hosted/office.js";
 
