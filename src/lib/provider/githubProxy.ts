@@ -1,7 +1,7 @@
 const PROXY_RULES: ReadonlyArray<{ match: string; replace: string }> = [
-  { match: "https://github.com/", replace: "/api/github/" },
   { match: "https://api.github.com/", replace: "/api/github-api/" },
-  { match: "https://api.individual.githubcopilot.com/", replace: "/api/copilot/" },
+  { match: "https://github.com/", replace: "/api/github-oauth/" },
+  { match: "https://api.individual.githubcopilot.com/", replace: "/api/copilot-api/" },
 ];
 
 /**

@@ -1,5 +1,4 @@
 import type { OAuthCredentials } from "@mariozechner/pi-ai";
-import { getModels } from "@mariozechner/pi-ai";
 import { loginGitHubCopilot } from "@mariozechner/pi-ai/oauth";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { CustomProviderConfig, ProviderConfig } from "../lib/provider/config";
@@ -8,6 +7,7 @@ import {
   getBaseUrlValidationError,
   normaliseCustomProvider,
 } from "../lib/provider/config";
+import { fetchCopilotModels } from "../lib/provider/copilotModels";
 import { listProviderModels } from "../lib/provider/models";
 import { useSessionStore } from "../state/sessionStore";
 
@@ -220,8 +220,25 @@ function CopilotProviderSection({
   const isConnected = config?.credentials != null;
   const [flowState, setFlowState] = useState<CopilotFlowState>({ step: "idle" });
   const abortRef = useRef<AbortController | null>(null);
+  const [copilotModels, setCopilotModels] = useState<Array<{ id: string; name: string }>>([]);
+  const [modelsLoading, setModelsLoading] = useState(false);
 
-  const copilotModels = getModels("github-copilot");
+  useEffect(() => {
+    if (!isConnected || !config?.credentials) return;
+    let cancelled = false;
+    setModelsLoading(true);
+    fetchCopilotModels(config.credentials.access)
+      .then((models) => {
+        if (!cancelled) setCopilotModels(models);
+      })
+      .catch(() => {
+        if (!cancelled) setCopilotModels([]);
+      })
+      .finally(() => {
+        if (!cancelled) setModelsLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [isConnected, config?.credentials]);
 
   const handleLogin = useCallback(async () => {
     const controller = new AbortController();
@@ -278,7 +295,9 @@ function CopilotProviderSection({
             className="settings-select"
             value={config.modelId}
             onChange={(e) => onModelChange(e.target.value)}
+            disabled={modelsLoading}
           >
+            {modelsLoading && <option>Loading models...</option>}
             {copilotModels.map((m) => (
               <option key={m.id} value={m.id}>
                 {m.name}
@@ -286,6 +305,10 @@ function CopilotProviderSection({
             ))}
           </select>
         </label>
+
+        <p className="field-hint">
+          {modelsLoading ? "Fetching available models..." : `${copilotModels.length} models available`}
+        </p>
 
         <button className="ghost-button settings-disconnect" type="button" onClick={onDisconnect}>
           Disconnect

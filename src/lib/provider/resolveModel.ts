@@ -1,6 +1,6 @@
 import type { Api, Model } from "@mariozechner/pi-ai";
 import { getModels } from "@mariozechner/pi-ai";
-import { githubCopilotOAuthProvider } from "@mariozechner/pi-ai/oauth";
+import { getGitHubCopilotBaseUrl, githubCopilotOAuthProvider } from "@mariozechner/pi-ai/oauth";
 import type { ProviderConfig } from "./config";
 
 function resolveBaseUrl(baseUrl: string): string {
@@ -17,8 +17,32 @@ export function resolveModelFromConfig(config: ProviderConfig): Model<Api> {
       models = githubCopilotOAuthProvider.modifyModels!(models, config.credentials);
     }
     const selected = models.find((m) => m.id === config.modelId);
-    if (!selected) throw new Error(`Model "${config.modelId}" not found in GitHub Copilot models`);
-    return selected;
+    if (selected) return selected;
+
+    // Model not in static list (fetched dynamically from Copilot API).
+    // Construct a model object using the Copilot token's base URL.
+    const baseUrl = config.credentials
+      ? getGitHubCopilotBaseUrl(config.credentials.access)
+      : "https://api.individual.githubcopilot.com";
+
+    return {
+      id: config.modelId,
+      name: config.modelId,
+      api: "openai-completions",
+      provider: "github-copilot",
+      baseUrl,
+      headers: {
+        "User-Agent": "GitHubCopilotChat/0.35.0",
+        "Editor-Version": "vscode/1.107.0",
+        "Editor-Plugin-Version": "copilot-chat/0.35.0",
+        "Copilot-Integration-Id": "vscode-chat",
+      },
+      reasoning: false,
+      input: ["text", "image"],
+      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+      contextWindow: 128000,
+      maxTokens: 16000,
+    };
   }
 
   return {
